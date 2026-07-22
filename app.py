@@ -62,7 +62,9 @@ def generate_stream(question):
         "4. 绝不提供急救指导、药物剂量或替代医生诊断的建议。\n\n"
         "5. 如果用户描述的症状不在上述列表中，请先询问是否有其他症状，并建议先休息观察，切勿自行套用脑卒中标准。\n\n"
         "【来源要求】\n"
-        "在回答末尾，请附上主要参考来源，格式如“（来源：《中国脑卒中防治指南2023》）”。如果使用了多个来源，可以列出。"
+        "在回答末尾，请明确附上您所参考的主要来源，格式如“（来源：《中国脑卒中防治指南2023》）”。\n"
+        "如果您的回答参考了多个资料，请依次列出，例如“（来源：《中国脑卒中防治指南2023》；参考：中国康复医学会《脑卒中康复指南2022》）”。\n"
+        "请务必根据您实际使用的知识提供真实来源，不要编造。"
     )
 
     try:
@@ -87,11 +89,11 @@ def generate_stream(question):
         return
 
     full_answer = ""
+    # 移除模型输出中的 ** 符号
     for chunk in stream:
         if chunk.choices and len(chunk.choices) > 0:
             delta = chunk.choices[0].delta
             if hasattr(delta, "content") and delta.content:
-                # ----- 修改点：移除所有 ** 符号 -----
                 txt = delta.content.replace('**', '')
                 full_answer += txt
                 # 逐字符发送
@@ -99,12 +101,13 @@ def generate_stream(question):
                     yield ch
                     time.sleep(0.02)
 
-    # 如果模型没有自带来源，且回答中不含“来源”，则手动补充（可选）
+    # 如果模型完全没有带来源，则添加一个温和的提示（不再强制统一来源）
     if "来源" not in full_answer and "参考" not in full_answer:
-        source = "\n\n（来源：《中国脑卒中防治指南2023》及相关专家共识）"
+        source = "\n\n（温馨提示：以上信息仅供参考，具体诊疗请咨询专业医生。）"
         for ch in source:
             yield ch
             time.sleep(0.02)
+    # 如果模型已经带了来源，则不再做任何补充，保留模型原有的来源（真实、多样）
 
 @app.route('/api/stream', methods=['POST'])
 def stream():
