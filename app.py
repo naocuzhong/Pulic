@@ -91,12 +91,13 @@ def generate_stream(question):
         if chunk.choices and len(chunk.choices) > 0:
             delta = chunk.choices[0].delta
             if hasattr(delta, "content") and delta.content:
-                txt = delta.content
+                # ----- 修改点：移除所有 ** 符号 -----
+                txt = delta.content.replace('**', '')
                 full_answer += txt
                 # 逐字符发送
                 for ch in txt:
                     yield ch
-                    time.sleep(0.02)  # 调整此值改变打字速度
+                    time.sleep(0.02)
 
     # 如果模型没有自带来源，且回答中不含“来源”，则手动补充（可选）
     if "来源" not in full_answer and "参考" not in full_answer:
