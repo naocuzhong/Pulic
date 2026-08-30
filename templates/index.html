@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>福医卒中通 · 脑卒中智能诊疗助手</title>
+    <title>福医卒中通 · 脑卒中智能问答助手</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        :root{--font-scale:1}
+        :root{--font-scale:1;--emoji-font:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji","Twemoji Mozilla",sans-serif}
         body{background:linear-gradient(135deg,#f0f7ff,#e6f4fd);padding:20px;min-height:100vh;font-size:calc(16px * var(--font-scale));padding-bottom:90px;font-family:"PingFang SC","Microsoft YaHei",sans-serif}
         .container{max-width:1000px;margin:0 auto}
         header{text-align:center;margin-bottom:20px}
@@ -16,45 +16,61 @@
         .chat-header-bar{background:linear-gradient(90deg,#0077cc,#0099ee);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
         .chat-header-bar h2{font-size:calc(32px * var(--font-scale));font-weight:600}
         .header-btns{display:flex;gap:8px;position:relative}
-        .header-btn{padding:6px 12px;border-radius:20px;background:rgba(255,255,255,0.2);color:#fff;border:none;font-size:calc(26px * var(--font-scale));cursor:pointer;transition:background 0.2s}
+        .header-btn{padding:6px 12px;border-radius:20px;background:rgba(255,255,255,0.2);color:#fff;border:none;font-size:calc(26px * var(--font-scale));cursor:pointer;transition:background 0.2s;white-space:nowrap}
         .header-btn:hover{background:rgba(255,255,255,0.35)}
         .chat-content{display:flex;flex:1;overflow:hidden}
         .sidebar{width:240px;background:#f8fcff;border-right:1px solid #e6f7ff;padding:30px 20px;display:flex;flex-direction:column;justify-content:center}
-        .avatar-box{width:120px;height:120px;margin:0 auto 10px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 15px rgba(0,119,204,0.15);overflow:hidden;cursor:pointer;position:relative;transition:box-shadow 0.2s}
+        .avatar-box{width:120px;height:120px;margin:0 auto 10px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 15px rgba(0,119,204,0.15);overflow:hidden;cursor:pointer;position:relative;transition:box-shadow .2s;border:2px solid #dceefb}
         .avatar-box:hover{box-shadow:0 6px 20px rgba(0,119,204,0.35)}
-        .avatar-box.patient{box-shadow:0 4px 15px rgba(84,153,199,0.15)}
+        .avatar-box.patient{border-color:#cdeeda;box-shadow:0 4px 15px rgba(84,153,199,0.15)}
         .avatar-box.patient:hover{box-shadow:0 6px 20px rgba(84,153,199,0.4)}
-        .avatar-inner{width:100%;height:100%;display:flex;align-items:center;justify-content:center;border-radius:50%;overflow:hidden}
-        .change-hint{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);background:rgba(0,119,204,0.85);color:#fff;font-size:12px;padding:2px 12px;border-radius:12px;opacity:0;transition:opacity 0.2s;pointer-events:none;white-space:nowrap}
+        .avatar-inner{width:100%;height:100%;border-radius:50%;overflow:hidden}
+        .change-hint{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);background:rgba(0,119,204,0.85);color:#fff;font-size:12px;padding:2px 10px;border-radius:12px;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
         .avatar-box:hover .change-hint{opacity:1}
+        @media (hover:none){.change-hint{opacity:1}}
         .avatar-card{text-align:center;margin-bottom:40px}
         .avatar-card h3{font-size:calc(28px * var(--font-scale));color:#333;font-weight:600}
         .chat-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
         .quick-questions{padding:12px 16px;background:#f5f9fe;border-bottom:1px solid #e6f0fa;overflow-x:auto;white-space:nowrap;display:flex;gap:10px}
         .quick-questions button{background:#eef3fc;border:1px solid #cce4f5;border-radius:24px;padding:8px 16px;font-size:calc(24px * var(--font-scale));color:#0077cc;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all 0.2s}
         .quick-questions button:hover{background:#0077cc;color:#fff;border-color:#0077cc}
-        .chat-body{flex:1;padding:20px;overflow-y:auto;background:#fafbfc}
+        .chat-body{flex:1;padding:20px;overflow-y:auto;background:#fafbfc;overscroll-behavior:contain}
         .message{display:flex;gap:10px;margin-bottom:14px;max-width:75%}
         .message.user{margin-left:auto;flex-direction:row-reverse}
-        .msg-avatar{width:40px;height:40px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.05);flex-shrink:0;overflow:hidden;cursor:pointer;transition:box-shadow 0.2s}
-        .msg-avatar:hover{box-shadow:0 2px 10px rgba(0,119,204,0.35)}
+        .msg-avatar{width:40px;height:40px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.05);flex-shrink:0;overflow:hidden;cursor:pointer}
         .msg-bubble{padding:12px 16px;border-radius:14px;background:#fff;border:1px solid #eee;line-height:1.5;font-size:calc(28px * var(--font-scale));word-break:break-word;box-shadow:0 2px 8px rgba(0,0,0,0.03)}
         .message.user .msg-bubble{background:#0077cc;color:#fff;border:none}
-        /* 自定义头像图片样式 */
-        .msg-avatar img,.avatar-inner img,.avatar-preview img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
+        .emoji-avatar{width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--emoji-font);line-height:1;user-select:none}
+        .avatar-inner .emoji-avatar{font-size:52px}
+        .msg-avatar .emoji-avatar{font-size:20px}
+        .avatar-preview .emoji-avatar{font-size:40px}
+        .avatar-inner img,.msg-avatar img,.avatar-preview img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
         .chat-footer{position:fixed;bottom:0;left:0;width:100%;padding:14px 20px;border-top:1px solid #eee;display:flex;gap:10px;background:#fff;z-index:99;padding-bottom:calc(14px + env(safe-area-inset-bottom))}
-        .chat-input{flex:1;padding:10px 16px;border:1px solid #ddd;border-radius:24px;outline:none;font-size:calc(28px * var(--font-scale));transition:border-color 0.2s}
+        .chat-input{flex:1;padding:10px 16px;border:1px solid #ddd;border-radius:24px;outline:none;font-size:calc(28px * var(--font-scale));transition:border-color 0.2s;min-width:0}
         .chat-input:focus{border-color:#0077cc}
-        .send-btn,.clear-btn{padding:10px 18px;border-radius:24px;background:#0077cc;color:#fff;border:none;font-size:calc(28px * var(--font-scale));cursor:pointer;transition:background 0.2s}
+        .send-btn,.clear-btn{padding:10px 18px;border-radius:24px;background:#0077cc;color:#fff;border:none;font-size:calc(28px * var(--font-scale));cursor:pointer;transition:background 0.2s;flex-shrink:0}
         .send-btn:hover{background:#005fa3}
+        .send-btn:disabled{opacity:.6;cursor:not-allowed}
         .clear-btn{background:#777}
         .clear-btn:hover{background:#555}
-        .mic-btn{width:38px;height:38px;border-radius:50%;background:#0077cc;color:#fff;font-size:calc(32px * var(--font-scale));border:none;cursor:pointer;display:flex;align-items:center;justify-content:center}
+        .mic-btn{width:44px;height:44px;border-radius:50%;background:#0077cc;color:#fff;font-size:20px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
         .mic-btn.recording{background:#e53935;animation:pulse 1s infinite}
         @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
-        .font-modal{position:absolute;top:60px;right:0;background:#fff;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.15);padding:15px;z-index:1000;display:none;min-width:280px}
+        /* ===== 字体调节弹窗 ===== */
+        .font-modal{position:absolute;top:60px;right:0;background:#fff;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.15);padding:15px;z-index:1000;display:none;min-width:260px}
         .font-modal.show{display:block}
-        /* ===== 头像设置弹窗样式 ===== */
+        .font-modal .modal-title{font-size:15px;font-weight:600;color:#0077cc;text-align:center;margin-bottom:10px}
+        .font-modal .opt-group{display:flex;gap:8px;margin-bottom:10px}
+        .font-modal .opt-btn{flex:1;padding:8px 0;border:1px solid #cce4f5;background:#eef3fc;color:#0077cc;border-radius:8px;cursor:pointer;font-size:14px;transition:all .2s}
+        .font-modal .opt-btn:hover{background:#d8ecfa}
+        .font-modal .opt-btn.active{background:#0077cc;color:#fff;border-color:#0077cc}
+        .font-modal .input-group{margin-bottom:10px}
+        .font-modal .input-group input{width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none}
+        .font-modal .input-group input:focus{border-color:#0077cc}
+        .font-modal .confirm-btn{width:100%;padding:9px 0;background:#0077cc;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px}
+        .font-modal .confirm-btn:hover{background:#005fa3}
+        .font-modal .tip-text{margin-top:8px;font-size:12px;color:#999;text-align:center}
+        /* ===== 头像设置弹窗 ===== */
         .avatar-modal-mask{position:fixed;inset:0;background:rgba(0,30,60,0.45);display:none;align-items:center;justify-content:center;z-index:2000;padding:16px}
         .avatar-modal-mask.show{display:flex}
         .avatar-modal{background:#fff;border-radius:16px;max-width:640px;width:100%;max-height:88vh;overflow-y:auto;padding:22px 24px;box-shadow:0 12px 40px rgba(0,60,120,0.25)}
@@ -62,43 +78,64 @@
         .avatar-modal-tip{font-size:12px;color:#999;text-align:center;margin:6px 0 14px;line-height:1.6}
         .avatar-modal-body{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
         .avatar-setting-block{flex:1;min-width:240px;background:#f8fcff;border:1px solid #e6f7ff;border-radius:12px;padding:16px;text-align:center}
-        .avatar-setting-block h4{font-size:calc(24px * var(--font-scale));color:#333;margin-bottom:10px}
-        .avatar-preview{width:84px;height:84px;margin:0 auto 10px;border-radius:50%;overflow:hidden;box-shadow:0 4px 12px rgba(0,119,204,0.18);display:flex;align-items:center;justify-content:center;background:#fff}
-        .avatar-preview svg{width:78px;height:78px}
+        .avatar-setting-block h4{font-size:16px;color:#333;margin-bottom:10px}
+        .avatar-preview{width:84px;height:84px;margin:0 auto 10px;border-radius:50%;overflow:hidden;box-shadow:0 4px 12px rgba(0,119,204,0.18);display:flex;align-items:center;justify-content:center;background:#fff;border:2px solid #dceefb}
         .preset-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:12px}
-        .preset-item{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;border:2px solid transparent;transition:transform 0.15s,border-color 0.15s;user-select:none}
+        .preset-item{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;border:2px solid transparent;transition:transform .15s,border-color .15s;user-select:none;font-family:var(--emoji-font);line-height:1}
         .preset-item:hover{transform:scale(1.12)}
         .preset-item.selected{border-color:#0077cc;box-shadow:0 0 0 3px rgba(0,119,204,0.2)}
         .avatar-ops{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
-        .op-btn{padding:8px 14px;border-radius:20px;border:1px solid #cce4f5;background:#eef3fc;color:#0077cc;font-size:14px;cursor:pointer;transition:all 0.2s}
+        .op-btn{padding:8px 14px;border-radius:20px;border:1px solid #cce4f5;background:#eef3fc;color:#0077cc;font-size:14px;cursor:pointer;transition:all .2s}
         .op-btn:hover{background:#d8ecfa}
         .op-btn.primary{background:#0077cc;color:#fff;border-color:#0077cc}
         .op-btn.primary:hover{background:#005fa3}
         .close-btn{display:block;margin:16px auto 0;background:#0077cc;color:#fff;border-color:#0077cc;padding:8px 34px}
-        @media (max-width:768px){.sidebar{display:none}.chat-main{width:100%}}
+        .close-btn:hover{background:#005fa3}
+        /* ===== 移动端适配 ===== */
+        @media (max-width:768px){
+            body{padding:12px;padding-bottom:74px}
+            .main-card{height:calc(100vh - 24px - 74px)}
+            .sidebar{display:none}
+            .chat-main{width:100%}
+            header{margin-bottom:8px}
+            header h1{font-size:24px;margin-bottom:2px}
+            header p{display:none}
+            .chat-header-bar{padding:8px 12px}
+            .chat-header-bar h2{font-size:18px}
+            .header-btn{font-size:12px;padding:4px 8px}
+            .chat-body{padding:12px}
+            .msg-bubble{font-size:14px;padding:8px 12px}
+            .quick-questions button{font-size:13px;padding:6px 12px}
+            .chat-footer{padding:8px 12px}
+            .chat-input{font-size:14px;padding:8px 12px}
+            .send-btn,.clear-btn{font-size:14px;padding:6px 12px}
+            .mic-btn{width:34px;height:34px;font-size:16px}
+            .message{max-width:90%}
+            .font-modal{position:fixed;top:52px;left:10px;right:10px;min-width:0}
+            .avatar-modal{padding:16px}
+            .avatar-setting-block{min-width:100%}
+        }
     </style>
 </head>
 <body>
 <div class="container">
-    <header><h1>福医卒中通</h1><p>脑卒中智能诊疗助手</p></header>
+    <header><h1>福医卒中通</h1><p id="subtitle" data-i18n="subtitle">脑卒中智能问答助手</p></header>
     <div class="main-card">
         <div class="chat-header-bar">
-            <h2>脑卒中智能咨询</h2>
+            <h2 data-i18n="chatTitle">脑卒中智能咨询</h2>
             <div class="header-btns">
                 <button class="header-btn" id="langBtn">切换英文</button>
-                <button class="header-btn" id="fontBtn">字体调节</button>
+                <button class="header-btn" id="fontBtn" data-i18n="fontBtn">字体调节</button>
                 <button class="header-btn" id="voiceBtn">语音播报：开</button>
                 <div class="font-modal" id="fontModal">
-                    <div class="modal-title">字体大小调节</div>
+                    <div class="modal-title" data-i18n="fontTitle">字体大小调节</div>
                     <div class="opt-group">
-                        <button class="opt-btn" id="enlargeBtn">放大</button>
-                        <button class="opt-btn" id="narrowBtn">缩小</button>
+                        <button class="opt-btn" id="enlargeBtn" data-i18n="fontEnlarge">放大</button>
+                        <button class="opt-btn" id="narrowBtn" data-i18n="fontNarrow">缩小</button>
                     </div>
-                    <div class="input-group">
-                        <input type="number" id="scaleInput" step="0.5" value="">
-                    </div>
-                    <button class="confirm-btn" id="confirmFontBtn">确认调节</button>
-                    <div class="tip-text">放大1-4 缩小0.3-1</div>
+                    <div class="input-group"><input type="number" id="scaleInput" step="0.5"></div>
+                    <button class="confirm-btn" id="confirmFontBtn" data-i18n="fontConfirm">确认调节</button>
+                    <div class="tip-text" data-i18n="fontTip">放大 1-4　缩小 0.3-1</div>
                 </div>
             </div>
         </div>
@@ -107,21 +144,21 @@
                 <div class="avatar-card">
                     <div class="avatar-box" id="doctorAvatarClick" title="点击更换头像">
                         <div class="avatar-inner" id="doctorAvatarBox"></div>
-                        <div class="change-hint">📷 更换头像</div>
+                        <div class="change-hint" data-i18n="avChange">📷 更换头像</div>
                     </div>
-                    <h3>福医卒中通助手</h3>
+                    <h3 data-i18n="sideDoctor">福医卒中通助手</h3>
                 </div>
                 <div class="avatar-card">
                     <div class="avatar-box patient" id="patientAvatarClick" title="点击更换头像">
                         <div class="avatar-inner" id="patientAvatarBox"></div>
-                        <div class="change-hint">📷 更换头像</div>
+                        <div class="change-hint" data-i18n="avChange">📷 更换头像</div>
                     </div>
-                    <h3>咨询患者</h3>
+                    <h3 data-i18n="sidePatient">咨询患者</h3>
                 </div>
             </div>
             <div class="chat-main">
                 <div class="quick-questions">
-                    <button id="quick1">高血压怎么预防中风？</button><button id="quick2">中风后吃什么好？</button><button id="quick3">家人中风后怎么照顾？</button><button id="quick4">怎么判断是不是中风？</button><button id="quick5">中风后手脚没力气怎么办？</button><button id="quick6">中风后情绪低落怎么办？</button><button id="quick7">中风康复训练有哪些？</button><button id="quick8">颈动脉斑块需要治疗吗？</button><button id="quick9">中风后可以运动吗？</button><button id="quick10">怎么帮家人做心理疏导？</button>
+                    <button id="quick1"></button><button id="quick2"></button><button id="quick3"></button><button id="quick4"></button><button id="quick5"></button><button id="quick6"></button><button id="quick7"></button><button id="quick8"></button><button id="quick9"></button><button id="quick10"></button>
                 </div>
                 <div class="chat-body" id="chatBody"></div>
             </div>
@@ -130,7 +167,7 @@
 </div>
 <div class="chat-footer">
     <input class="chat-input" id="input" placeholder="问脑卒中相关问题：预防、康复、养护、心理支持...">
-    <button class="mic-btn" id="micBtn">🎤</button>
+    <button class="mic-btn" id="micBtn" title="语音输入">🎤</button>
     <button class="send-btn" id="sendBtn">发送</button>
     <button class="send-btn clear-btn" id="clearBtn">清空</button>
 </div>
@@ -138,266 +175,390 @@
 <!-- ===== 头像设置弹窗 ===== -->
 <div class="avatar-modal-mask" id="avatarModalMask">
     <div class="avatar-modal" role="dialog" aria-label="头像设置">
-        <div class="avatar-modal-title">🎨 头像设置</div>
-        <p class="avatar-modal-tip">点击侧边栏或聊天中的头像也可打开此窗口<br>自定义头像仅保存在本机浏览器中，支持 jpg / png / webp 等常见图片格式</p>
+        <div class="avatar-modal-title" data-i18n="avTitle">🎨 头像设置</div>
+        <p class="avatar-modal-tip" data-i18n="avTip">点击侧边栏或聊天中的头像均可打开此窗口<br>自定义头像仅保存在本机浏览器，支持 jpg / png / webp 等格式</p>
         <div class="avatar-modal-body">
             <div class="avatar-setting-block">
-                <h4>助手头像（医生）</h4>
+                <h4 data-i18n="avDoctor">⛑️ 助手头像（医生）</h4>
                 <div class="avatar-preview" id="doctorPreviewBox"></div>
                 <div class="preset-row" id="doctorPresetRow"></div>
                 <div class="avatar-ops">
-                    <button class="op-btn primary" id="doctorUploadBtn">📤 上传自定义</button>
-                    <button class="op-btn" id="doctorResetBtn">↺ 恢复默认</button>
+                    <button class="op-btn primary" id="doctorUploadBtn" data-i18n="avUpload">📤 上传自定义</button>
+                    <button class="op-btn" id="doctorResetBtn" data-i18n="avReset">↺ 恢复默认</button>
                 </div>
                 <input type="file" id="doctorFileInput" accept="image/*" style="display:none">
             </div>
             <div class="avatar-setting-block">
-                <h4>患者头像（我）</h4>
+                <h4 data-i18n="avPatient">♿ 患者头像（我）</h4>
                 <div class="avatar-preview" id="patientPreviewBox"></div>
                 <div class="preset-row" id="patientPresetRow"></div>
                 <div class="avatar-ops">
-                    <button class="op-btn primary" id="patientUploadBtn">📤 上传自定义</button>
-                    <button class="op-btn" id="patientResetBtn">↺ 恢复默认</button>
+                    <button class="op-btn primary" id="patientUploadBtn" data-i18n="avUpload">📤 上传自定义</button>
+                    <button class="op-btn" id="patientResetBtn" data-i18n="avReset">↺ 恢复默认</button>
                 </div>
                 <input type="file" id="patientFileInput" accept="image/*" style="display:none">
             </div>
         </div>
-        <button class="op-btn close-btn" id="avatarModalClose">完 成</button>
+        <button class="op-btn close-btn" id="avatarModalClose" data-i18n="avDone">完 成</button>
     </div>
 </div>
 
 <script>
-let lang = "zh", voiceEnabled = true, fontOpt = "enlarge", isRecording = false, recognition = null;
-const synth = window.speechSynthesis;
+let lang = "zh", voiceEnabled = true, fontOpt = "enlarge", isRecording = false, isSending = false, recognition = null;
+const synth = ('speechSynthesis' in window) ? window.speechSynthesis : null;
 
-// ===== 头像状态（localStorage 持久化） =====
-const avatars = {
-    patient: localStorage.getItem('fyyzt_avatar_patient') || '',
-    doctor:  localStorage.getItem('fyyzt_avatar_doctor')  || ''
-};
-
-// 预设头像：[表情, 背景色]
-const PRESET_DOCTOR  = [['🧑‍⚕️','#E6F7FF'],['👩‍⚕️','#FCE4EC'],['👨‍⚕️','#E8F5E9'],['🩺','#FFF8E1'],['🤖','#EDE7F6'],['📖','#E0F7FA'],['🌟','#FFFDE7'],['🫀','#FFEBEE']];
-const PRESET_PATIENT = [['🙂','#E8F5E9'],['😊','#FFF8E1'],['👴','#EDE7F6'],['👵','#FCE4EC'],['🧑','#E0F7FA'],['👩','#F3E5F5'],['👨','#E3F2FD'],['🌻','#FFFDE7']];
-
-function presetDataURI(emoji, bg){
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="${bg}"/><text x="50" y="56" font-size="52" text-anchor="middle" dominant-baseline="middle" font-family="sans-serif">${emoji}</text></svg>`;
-    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+/* ================= 中英文文案（切换语言时全界面同步） ================= */
+const I18N = {
+zh:{
+    subtitle:'脑卒中智能问答助手', chatTitle:'脑卒中智能咨询',
+    langBtn:'切换英文', fontBtn:'字体调节',
+    voiceOn:'语音播报：开', voiceOff:'语音播报：关',
+    fontTitle:'字体大小调节', fontEnlarge:'放大', fontNarrow:'缩小', fontConfirm:'确认调节', fontTip:'放大 1-4　缩小 0.3-1',
+    placeholder:'问脑卒中相关问题：预防、康复、养护、心理支持...',
+    send:'发送', clear:'清空', micTitle:'语音输入（说完自动发送）',
+    welcome:'你好！我是脑卒中智能助手，可咨询预防、康复、养护、心理支持等问题~\n💡 小贴士：点击任意头像可以更换头像哦！',
+    thinking:'🤔 思考中...', netErr:'抱歉，网络错误，请稍后再试。',
+    sideDoctor:'福医卒中通助手', sidePatient:'咨询患者',
+    avTitle:'🎨 头像设置',
+    avTip:'点击侧边栏或聊天中的头像均可打开此窗口<br>自定义头像仅保存在本机浏览器，支持 jpg / png / webp 等格式',
+    avDoctor:'⛑️ 助手头像（医生）', avPatient:'♿ 患者头像（我）',
+    avUpload:'📤 上传自定义', avReset:'↺ 恢复默认', avDone:'完 成',
+    avChange:'📷 更换头像', avClickChange:'点击更换头像', avUse:'使用该头像',
+    voiceUnsupported:'当前浏览器不支持语音播报功能',
+    micUnsupported:'当前浏览器不支持语音输入，请使用 Chrome / Edge',
+    micFail:'麦克风启动失败',
+    imgInvalid:'请选择图片文件（jpg / png / webp 等）',
+    imgTooLarge:'图片过大，请选择 15MB 以内的图片',
+    imgFail:'图片处理失败，请更换图片重试',
+    questions:['高血压怎么预防中风？','中风后吃什么好？','家人中风后怎么照顾？','怎么判断是不是中风？','中风后手脚没力气怎么办？','中风后情绪低落怎么办？','中风康复训练有哪些？','颈动脉斑块需要治疗吗？','中风后可以运动吗？','怎么帮家人做心理疏导？']
+},
+en:{
+    subtitle:'Intelligent Stroke Q&A Assistant', chatTitle:'Intelligent Stroke Consultation',
+    langBtn:'切换中文', fontBtn:'Font Size',
+    voiceOn:'Voice: ON', voiceOff:'Voice: OFF',
+    fontTitle:'Adjust Font Size', fontEnlarge:'Larger', fontNarrow:'Smaller', fontConfirm:'Apply', fontTip:'Larger 1-4 · Smaller 0.3-1',
+    placeholder:'Ask stroke-related questions: prevention, rehab, care, emotional support...',
+    send:'Send', clear:'Clear', micTitle:'Voice input (auto-sends when done)',
+    welcome:"Hello! I'm your stroke assistant. Ask about prevention, rehab, daily care or emotional support~\n💡 Tip: click any avatar to change it!",
+    thinking:'🤔 Thinking...', netErr:'Sorry, network error. Please try again later.',
+    sideDoctor:'Stroke Assistant', sidePatient:'Patient (Me)',
+    avTitle:'🎨 Avatar Settings',
+    avTip:'Click any avatar (sidebar or in chat) to open this panel<br>Custom avatars are saved in this browser only · jpg / png / webp',
+    avDoctor:'⛑️ Assistant Avatar (Doctor)', avPatient:'♿ My Avatar (Patient)',
+    avUpload:'📤 Upload', avReset:'↺ Reset', avDone:'Done',
+    avChange:'📷 Change', avClickChange:'Click to change avatar', avUse:'Use this avatar',
+    voiceUnsupported:'Speech synthesis is not supported in this browser',
+    micUnsupported:'Voice input not supported. Please use Chrome / Edge',
+    micFail:'Failed to start microphone',
+    imgInvalid:'Please choose an image file (jpg / png / webp)',
+    imgTooLarge:'Image too large (max 15MB)',
+    imgFail:'Failed to process image, please try another one',
+    questions:['How to prevent stroke with hypertension?','What to eat after a stroke?','How to care for a family member after stroke?','How to tell if it is a stroke?','What to do about limb weakness after stroke?','How to deal with low mood after stroke?','What rehabilitation training is available?','Does carotid plaque need treatment?','Can I exercise after a stroke?','How to support my family member emotionally?']
+}};
+function tr(key){ return (I18N[lang] && I18N[lang][key]) || I18N.zh[key] || ''; }
+function applyLang(){
+    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+    document.title = lang === 'zh' ? '福医卒中通 · 脑卒中智能问答助手' : 'Fuyi Stroke Assistant · Intelligent Stroke Q&A';
+    document.querySelectorAll('[data-i18n]').forEach(el => { const v = tr(el.getAttribute('data-i18n')); if (v) el.innerHTML = v; });
+    const vb = getEl('voiceBtn'); if (vb) vb.textContent = voiceEnabled ? tr('voiceOn') : tr('voiceOff');
+    const lb = getEl('langBtn');  if (lb) lb.textContent = tr('langBtn');
+    const inp = getEl('input');   if (inp) inp.placeholder = tr('placeholder');
+    const mic = getEl('micBtn');  if (mic) mic.title = tr('micTitle');
+    const sb = getEl('sendBtn');  if (sb) sb.textContent = tr('send');
+    const cb = getEl('clearBtn'); if (cb) cb.textContent = tr('clear');
+    const qs = tr('questions');
+    for (let i = 1; i <= 10; i++) { const b = getEl('quick' + i); if (b && qs[i-1]) b.textContent = qs[i-1]; }
 }
 
-// 精美医生小头像（聊天框默认）
-const doctorAvatar = `<svg viewBox="0 0 44 44" width="44" height="44"><circle cx="22" cy="22" r="22" fill="#E6F7FF"/><path d="M10,44 L10,30 C10,25 18,22 22,22 C26,22 34,25 34,30 L34,44 Z" fill="#fff" stroke="#0077cc" stroke-width="1"/><path d="M16,22 L22,30 L28,22 Z" fill="#0077cc"/><circle cx="22" cy="16" r="10" fill="#FFDAB9"/><path d="M12,16 C12,8 32,8 32,16 C32,12 28,10 22,10 C16,10 12,12 12,16 Z" fill="#4A4A4A"/><circle cx="17" cy="17" r="1.5" fill="#333"/><circle cx="27" cy="17" r="1.5" fill="#333"/><path d="M19,21 Q22,23 25,21" fill="none" stroke="#D35B6B" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+/* ================= 安全存储（localStorage 异常时静默降级） ================= */
+function safeGet(k, d){ try { const v = localStorage.getItem(k); return v === null ? d : v; } catch(e){ return d; } }
+function safeSet(k, v){ try { localStorage.setItem(k, v); return true; } catch(e){ return false; } }
+function safeDel(k){ try { localStorage.removeItem(k); } catch(e){} }
 
-// 精美患者小头像（聊天框默认）
-const patientAvatar = `<svg viewBox="0 0 44 44" width="44" height="44"><circle cx="22" cy="22" r="22" fill="#F0F9FF"/><path d="M10,44 L10,30 C10,25 18,22 22,22 C26,22 34,25 34,30 L34,44 Z" fill="#F0F9FF" stroke="#5499c7" stroke-width="1"/><circle cx="22" cy="16" r="10" fill="#FFDAB9"/><path d="M12,16 C12,8 32,8 32,16 C32,12 28,10 22,10 C16,10 12,12 12,16 Z" fill="#BBBBBB"/><circle cx="17" cy="17" r="3" fill="none" stroke="#333" stroke-width="1"/><circle cx="27" cy="17" r="3" fill="none" stroke="#333" stroke-width="1"/><line x1="20" y1="17" x2="24" y2="17" stroke="#333" stroke-width="1"/><circle cx="17" cy="17" r="1" fill="#333"/><circle cx="27" cy="17" r="1" fill="#333"/><path d="M19,21 Q22,23 25,21" fill="none" stroke="#D35B6B" stroke-width="1.5" stroke-linecap="round"/></svg>`;
-
-// 侧边栏大号默认头像
-const doctorAvatarLarge = `<svg viewBox="0 0 120 120" width="100" height="100"><defs><linearGradient id="docSkin" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FFDAB9"/><stop offset="100%" stop-color="#F4A89F"/></linearGradient><linearGradient id="docCoat" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="100%" stop-color="#F0F7FF"/></linearGradient><linearGradient id="docBg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#E6F7FF"/><stop offset="100%" stop-color="#C1E3FF"/></linearGradient></defs><circle cx="60" cy="60" r="58" fill="url(#docBg)" stroke="#0077cc" stroke-width="2"/><path d="M20,120 L20,85 C20,65 45,55 60,55 C75,55 100,65 100,85 L100,120 Z" fill="url(#docCoat)" stroke="#0077cc" stroke-width="1.5"/><path d="M45,55 L60,75 L75,55 L70,50 L60,65 L50,50 Z" fill="#0077cc"/><path d="M50,55 L50,65 C50,70 70,70 70,65 L70,55 Z" fill="url(#docSkin)"/><ellipse cx="60" cy="40" rx="22" ry="25" fill="url(#docSkin)"/><path d="M38,40 C38,18 82,18 82,40 C82,30 75,25 60,25 C45,25 38,30 38,40 Z" fill="#4A4A4A"/><path d="M50,42 Q55,45 60,42" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round"/><path d="M60,42 Q65,45 70,42" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round"/><circle cx="45" cy="48" r="4" fill="#FFC0CB" opacity="0.5"/><circle cx="75" cy="48" r="4" fill="#FFC0CB" opacity="0.5"/><path d="M53,52 Q60,56 67,52" fill="none" stroke="#D35B6B" stroke-width="2" stroke-linecap="round"/><path d="M40,70 C40,85 50,95 55,90 M80,70 C80,85 70,95 65,90" fill="none" stroke="#00558b" stroke-width="2.5"/><circle cx="60" cy="90" r="6" fill="#00558b" stroke="#333" stroke-width="1"/><circle cx="60" cy="90" r="3" fill="#A0C8E0"/></svg>`;
-
-const patientAvatarLarge = `<svg viewBox="0 0 120 120" width="100" height="100"><defs><linearGradient id="patSkin" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FFDAB9"/><stop offset="100%" stop-color="#F4A89F"/></linearGradient><linearGradient id="patClothes" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#F0F9FF"/><stop offset="100%" stop-color="#C6E7FF"/></linearGradient><linearGradient id="patBg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#F0F9FF"/><stop offset="100%" stop-color="#D4E6FF"/></linearGradient></defs><circle cx="60" cy="60" r="58" fill="url(#patBg)" stroke="#5499c7" stroke-width="2"/><path d="M20,120 L20,85 C20,65 45,55 60,55 C75,55 100,65 100,85 L100,120 Z" fill="url(#patClothes)" stroke="#5499c7" stroke-width="1.5"/><path d="M25,100 L95,100 M25,110 L95,110" stroke="#A0C8E0" stroke-width="2" stroke-dasharray="4,4"/><path d="M50,55 L50,65 C50,70 70,70 70,65 L70,55 Z" fill="url(#patSkin)"/><ellipse cx="60" cy="40" rx="22" ry="25" fill="url(#patSkin)"/><path d="M38,40 C38,18 82,18 82,40 C82,30 75,25 60,25 C45,25 38,30 38,40 Z" fill="#BBBBBB"/><path d="M38,35 C40,25 50,22 50,22 C40,30 40,40 40,40 Z" fill="#AAAAAA"/><path d="M82,35 C80,25 70,22 70,22 C80,30 80,40 80,40 Z" fill="#AAAAAA"/><circle cx="50" cy="42" r="6" fill="none" stroke="#333" stroke-width="1.5"/><circle cx="70" cy="42" r="6" fill="none" stroke="#333" stroke-width="1.5"/><line x1="56" y1="42" x2="64" y2="42" stroke="#333" stroke-width="1.5"/><circle cx="50" cy="42" r="2" fill="#333"/><circle cx="70" cy="42" r="2" fill="#333"/><path d="M53,52 Q60,55 67,52" fill="none" stroke="#D35B6B" stroke-width="2" stroke-linecap="round"/><circle cx="43" cy="48" r="4" fill="#FFC0CB" opacity="0.5"/><circle cx="77" cy="48" r="4" fill="#FFC0CB" opacity="0.5"/></svg>`;
-
-// ===== 头像核心逻辑 =====
-function getAvatarHTML(role, large){
-    if(avatars[role]) return `<img src="${avatars[role]}" alt="${role==='patient'?'患者':'医生'}头像">`;
-    if(large) return role==='patient' ? patientAvatarLarge : doctorAvatarLarge;
-    return role==='patient' ? patientAvatar : doctorAvatar;
+/* ================= 头像系统（基础头像：⛑️ 医生 / ♿ 患者） =================
+   存储值三种形态：''=基础头像 | 'p:数字'=预设序号 | 'data:image/...'=上传图片 */
+const DEFAULT_AV = {
+    doctor:  { emoji:'⛑️', bg:'linear-gradient(135deg,#E6F7FF 0%,#B7E2FF 100%)' },
+    patient: { emoji:'♿',  bg:'linear-gradient(135deg,#EAFBF1 0%,#C2EDD4 100%)' }
+};
+const PRESETS = {
+    doctor:  [['🩺','#E3F2FD'],['🧑‍⚕️','#E0F7FA'],['🏥','#E8F5E9'],['💉','#FCE4EC'],['💊','#FFF8E1'],['🚑','#FFEBEE'],['📋','#EDE7F6'],['🔬','#E0F2F1']],
+    patient: [['🧑‍🦽','#E8F5E9'],['🛏️','#FFF8E1'],['💊','#FCE4EC'],['🩹','#E3F2FD'],['🙂','#E0F7FA'],['🌿','#E8F5E9'],['💪','#FFFDE7'],['🧓','#F3E5F5']]
+};
+function normalizeAvatar(v){
+    if (!v) return '';
+    if (/^p:\d+$/.test(v)) return v;
+    if (/^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(v)) return v;
+    return ''; // 存储值非法/被篡改 → 自动回退基础头像
+}
+const avatarStore = {
+    doctor:  normalizeAvatar(safeGet('fyyzt_avatar_doctor', '')),
+    patient: normalizeAvatar(safeGet('fyyzt_avatar_patient', ''))
+};
+function getAvatarHTML(role){
+    const v = avatarStore[role] || '';
+    if (v.startsWith('data:')) return `<img src="${v}" alt="${role === 'patient' ? 'patient' : 'doctor'} avatar">`;
+    if (v.startsWith('p:')) {
+        const list = PRESETS[role];
+        const i = Math.min(list.length - 1, parseInt(v.slice(2), 10) || 0);
+        return `<div class="emoji-avatar" style="background:${list[i][1]}">${list[i][0]}</div>`;
+    }
+    const d = DEFAULT_AV[role];
+    return `<div class="emoji-avatar" style="background:${d.bg}">${d.emoji}</div>`;
 }
 function refreshAvatars(){
-    const d=getEl('doctorAvatarBox'), p=getEl('patientAvatarBox');
-    if(d) d.innerHTML=getAvatarHTML('doctor', true);
-    if(p) p.innerHTML=getAvatarHTML('patient', true);
-    document.querySelectorAll('.message.user .msg-avatar').forEach(el=>{ el.innerHTML=getAvatarHTML('patient'); });
-    document.querySelectorAll('.message.assistant .msg-avatar').forEach(el=>{ el.innerHTML=getAvatarHTML('doctor'); });
+    const d = getEl('doctorAvatarBox'), p = getEl('patientAvatarBox');
+    if (d) d.innerHTML = getAvatarHTML('doctor');
+    if (p) p.innerHTML = getAvatarHTML('patient');
+    document.querySelectorAll('.message.assistant .msg-avatar').forEach(el => el.innerHTML = getAvatarHTML('doctor'));
+    document.querySelectorAll('.message.user .msg-avatar').forEach(el => el.innerHTML = getAvatarHTML('patient'));
 }
 function openAvatarModal(){ renderAvatarModal(); getEl('avatarModalMask')?.classList.add('show'); }
 function closeAvatarModal(){ getEl('avatarModalMask')?.classList.remove('show'); }
 function renderAvatarModal(){
-    ['patient','doctor'].forEach(role=>{
-        const preview=getEl(role+'PreviewBox');
-        if(preview) preview.innerHTML=getAvatarHTML(role, true);
-        const row=getEl(role+'PresetRow');
-        if(row){
-            row.innerHTML='';
-            const list = role==='patient' ? PRESET_PATIENT : PRESET_DOCTOR;
-            list.forEach(([emoji,bg])=>{
-                const uri=presetDataURI(emoji,bg);
-                const item=document.createElement('div');
-                item.className='preset-item'+(avatars[role]===uri?' selected':'');
-                item.style.background=bg;
-                item.textContent=emoji;
-                item.title='使用该头像';
-                item.addEventListener('click',()=>{
-                    avatars[role]=uri;
-                    try{ localStorage.setItem('fyyzt_avatar_'+role, uri); }catch(e){}
-                    refreshAvatars(); renderAvatarModal();
-                });
-                row.appendChild(item);
+    ['doctor','patient'].forEach(role => {
+        const preview = getEl(role + 'PreviewBox');
+        if (preview) preview.innerHTML = getAvatarHTML(role);
+        const row = getEl(role + 'PresetRow'); if (!row) return;
+        row.innerHTML = '';
+        PRESETS[role].forEach(([emoji, bg], idx) => {
+            const val = 'p:' + idx;
+            const item = document.createElement('div');
+            item.className = 'preset-item' + (avatarStore[role] === val ? ' selected' : '');
+            item.style.background = bg; item.textContent = emoji; item.title = tr('avUse');
+            item.addEventListener('click', () => {
+                avatarStore[role] = val; safeSet('fyyzt_avatar_' + role, val);
+                refreshAvatars(); renderAvatarModal();
             });
-        }
+            row.appendChild(item);
+        });
     });
 }
 function processAndStoreImage(file, role){
-    if(!file.type || !file.type.startsWith('image/')){ alert('请选择图片文件（jpg / png 等）'); return; }
-    if(file.size > 15*1024*1024){ alert('图片太大，请选择 15MB 以内的图片'); return; }
-    const reader=new FileReader();
-    reader.onload=e=>{
-        const img=new Image();
-        img.onload=()=>{
-            try{
-                const size=240, canvas=document.createElement('canvas');
-                canvas.width=size; canvas.height=size;
-                const ctx=canvas.getContext('2d');
-                ctx.fillStyle='#fff'; ctx.fillRect(0,0,size,size);
-                const min=Math.min(img.width,img.height);
-                ctx.drawImage(img,(img.width-min)/2,(img.height-min)/2,min,min,0,0,size,size);
-                const dataUrl=canvas.toDataURL('image/jpeg',0.88);
-                localStorage.setItem('fyyzt_avatar_'+role, dataUrl);
-                avatars[role]=dataUrl;
+    if (!file.type || !file.type.startsWith('image/')) { alert(tr('imgInvalid')); return; }
+    if (file.size > 15 * 1024 * 1024) { alert(tr('imgTooLarge')); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+            try {
+                const size = 240, canvas = document.createElement('canvas');
+                canvas.width = size; canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) throw new Error('canvas unsupported');
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, size, size);
+                const min = Math.min(img.width, img.height);
+                ctx.drawImage(img, (img.width - min) / 2, (img.height - min) / 2, min, min, 0, 0, size, size);
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+                avatarStore[role] = dataUrl;
+                if (!safeSet('fyyzt_avatar_' + role, dataUrl)) { /* 存储失败仍可本次会话使用 */ }
                 refreshAvatars(); renderAvatarModal();
-            }catch(err){ alert('头像处理失败，请换一张图片试试'); console.error(err); }
+            } catch(err) { alert(tr('imgFail')); console.error(err); }
         };
-        img.onerror=()=>alert('图片读取失败，请换一张图片');
-        img.src=e.target.result;
+        img.onerror = () => alert(tr('imgFail'));
+        img.src = e.target.result;
     };
+    reader.onerror = () => alert(tr('imgFail'));
     reader.readAsDataURL(file);
 }
 function bindAvatarControls(role){
-    const input=getEl(role+'FileInput');
-    input?.addEventListener('change',()=>{
-        const file=input.files && input.files[0];
-        if(file) processAndStoreImage(file, role);
-        input.value='';
+    const input = getEl(role + 'FileInput');
+    input?.addEventListener('change', () => {
+        const f = input.files && input.files[0];
+        if (f) processAndStoreImage(f, role);
+        input.value = '';
     });
-    getEl(role+'UploadBtn')?.addEventListener('click',()=>input?.click());
-    getEl(role+'ResetBtn')?.addEventListener('click',()=>{
-        avatars[role]='';
-        localStorage.removeItem('fyyzt_avatar_'+role);
+    getEl(role + 'UploadBtn')?.addEventListener('click', () => input && input.click());
+    getEl(role + 'ResetBtn')?.addEventListener('click', () => {
+        avatarStore[role] = ''; safeDel('fyyzt_avatar_' + role);
         refreshAvatars(); renderAvatarModal();
     });
 }
 
+/* ================= 基础工具 ================= */
 function getEl(id){ return document.getElementById(id); }
+
+/* ===== 字体调节 ===== */
 function selectOpt(opt){
-    fontOpt=opt; let enlargeBtn=getEl('enlargeBtn'), narrowBtn=getEl('narrowBtn');
-    if(enlargeBtn) enlargeBtn.className=opt==='enlarge'?'opt-btn active':'opt-btn';
-    if(narrowBtn) narrowBtn.className=opt==='narrow'?'opt-btn active':'opt-btn';
-    let si=getEl('scaleInput'); if(si){
-        if(opt==='enlarge'){ si.min=1; si.max=4; si.step=0.5; si.placeholder="1-4"; }
-        else{ si.min=0.3; si.max=1; si.step=0.1; si.placeholder="0.3-1"; }
-        si.value=""; si.focus();
+    fontOpt = opt;
+    const eb = getEl('enlargeBtn'), nb = getEl('narrowBtn');
+    if (eb) eb.className = opt === 'enlarge' ? 'opt-btn active' : 'opt-btn';
+    if (nb) nb.className = opt === 'narrow' ? 'opt-btn active' : 'opt-btn';
+    const si = getEl('scaleInput');
+    if (si) {
+        if (opt === 'enlarge') { si.min = 1; si.max = 4; si.step = 0.5; si.placeholder = '1 - 4'; }
+        else { si.min = 0.3; si.max = 1; si.step = 0.1; si.placeholder = '0.3 - 1'; }
+        si.value = ''; si.focus();
     }
 }
 function adjustFont(){
-    let si=getEl('scaleInput'); if(!si) return;
-    let v=parseFloat(si.value.trim()); if(isNaN(v)||v<=0) v=1;
-    if(fontOpt==='enlarge') v=Math.min(4,Math.max(1,v)); else v=Math.min(1,Math.max(0.3,v));
-    document.documentElement.style.setProperty('--font-scale', v); si.value=v; closeFontModal();
+    const si = getEl('scaleInput'); if (!si) return;
+    let v = parseFloat(si.value);
+    if (isNaN(v) || v <= 0) v = 1;
+    v = fontOpt === 'enlarge' ? Math.min(4, Math.max(1, v)) : Math.min(1, Math.max(0.3, v));
+    document.documentElement.style.setProperty('--font-scale', v);
+    si.value = v; closeFontModal();
 }
-function openFontModal(){ let modal=getEl('fontModal'); if(modal) modal.classList.add('show'); let si=getEl('scaleInput'); if(si) si.focus(); }
-function closeFontModal(){ let modal=getEl('fontModal'); if(modal) modal.classList.remove('show'); selectOpt('enlarge'); }
+function openFontModal(){ getEl('fontModal')?.classList.add('show'); selectOpt(fontOpt); }
+function closeFontModal(){ getEl('fontModal')?.classList.remove('show'); }
+
+/* ===== 语音输入 / 播报 ===== */
 function initRecognition(){
-    if(!window.SpeechRecognition && !window.webkitSpeechRecognition){ alert("浏览器不支持语音输入"); return false; }
-    const Rec=window.SpeechRecognition||window.webkitSpeechRecognition; recognition=new Rec();
-    recognition.lang=lang==='zh'?'zh-CN':'en-US'; recognition.interimResults=false; recognition.continuous=false;
-    recognition.onresult=(e)=>{ let txt=e.results[0][0].transcript; let inp=getEl('input'); if(inp) inp.value=txt; stopRec(); };
-    recognition.onerror=stopRec; recognition.onend=stopRec; return true;
+    const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Rec) { alert(tr('micUnsupported')); return false; }
+    recognition = new Rec();
+    recognition.lang = lang === 'zh' ? 'zh-CN' : 'en-US';
+    recognition.interimResults = false; recognition.continuous = false;
+    recognition.onresult = e => {
+        const txt = e.results[0][0].transcript;
+        const inp = getEl('input'); if (inp) inp.value = txt;
+        stopRec(); send(); // 识别完成自动发送
+    };
+    recognition.onerror = stopRec; recognition.onend = () => { if (isRecording) stopRec(); };
+    return true;
 }
 function toggleRec(){
-    if(!recognition && !initRecognition()) return;
-    isRecording=!isRecording; let btn=getEl('micBtn'); if(btn) btn.classList.toggle('recording');
-    if(isRecording){ try{ recognition.start(); }catch(e){ stopRec(); alert("麦克风启动失败"); } }
-    else{ recognition.stop(); }
+    if (!recognition && !initRecognition()) return;
+    isRecording = !isRecording;
+    getEl('micBtn')?.classList.toggle('recording', isRecording);
+    if (isRecording) { try { recognition.start(); } catch(e) { stopRec(); alert(tr('micFail')); } }
+    else { try { recognition.stop(); } catch(e){} }
 }
-function stopRec(){ isRecording=false; let btn=getEl('micBtn'); if(btn) btn.classList.remove('recording'); if(recognition) recognition.stop(); }
+function stopRec(){
+    isRecording = false;
+    getEl('micBtn')?.classList.remove('recording');
+    if (recognition) { try { recognition.stop(); } catch(e){} }
+}
+function getLastAssistantMessage(){
+    const msgs = document.querySelectorAll('.message.assistant:not(.loading-message) .msg-bubble');
+    return msgs.length ? msgs[msgs.length - 1].innerText.trim() : null;
+}
+function speak(text){
+    if (!voiceEnabled || !synth || !text) return;
+    try {
+        synth.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = lang === 'zh' ? 'zh-CN' : 'en-US';
+        synth.speak(u);
+    } catch(e) { console.error(e); }
+}
 function toggleVoice(){
-    voiceEnabled=!voiceEnabled; let btn=getEl('voiceBtn'); if(btn) btn.innerText="语音播报："+(voiceEnabled?"开":"关");
-    if(!voiceEnabled) synth.cancel(); else{ let last=getLastAssistantMessage(); if(last) speak(last); }
+    if (!synth) { alert(tr('voiceUnsupported')); return; }
+    voiceEnabled = !voiceEnabled;
+    const btn = getEl('voiceBtn'); if (btn) btn.textContent = voiceEnabled ? tr('voiceOn') : tr('voiceOff');
+    if (!voiceEnabled) synth.cancel();
+    else { const last = getLastAssistantMessage(); if (last) speak(last); }
 }
-function getLastAssistantMessage(){ let msgs=document.querySelectorAll('.message.assistant .msg-bubble'); if(msgs.length) return msgs[msgs.length-1].innerText.trim(); return null; }
-function speak(t){ if(!voiceEnabled||!t) return; synth.cancel(); let u=new SpeechSynthesisUtterance(t); u.lang=lang==='zh'?'zh-CN':'en-US'; synth.speak(u); }
+
+/* ===== 语言切换 ===== */
+let switchingLang = false;
 async function switchLang(){
-    lang=lang==='zh'?'en':'zh'; await fetch("/api/switch_lang",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lang})}).catch(e=>console.log);
-    let btn=getEl('langBtn'); if(btn) btn.innerText=lang==='zh'?"切换英文":"切换中文"; clearChat();
+    if (switchingLang) return; switchingLang = true;
+    lang = lang === 'zh' ? 'en' : 'zh';
+    await fetch('/api/switch_lang', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ lang }) }).catch(e => console.log(e));
+    if (recognition) recognition.lang = lang === 'zh' ? 'zh-CN' : 'en-US';
+    applyLang(); clearChat(); switchingLang = false;
 }
+
+/* ===== 消息 ===== */
 function addMsg(role, text){
-    let body=getEl('chatBody'); if(!body) return;
-    let div=document.createElement('div'); div.className='message '+role;
-    let avatar=role==='user'?getAvatarHTML('patient'):getAvatarHTML('doctor');
-    let cleaned=text.replace(/\*\*/g, '');
-    div.innerHTML = `<div class="msg-avatar" title="点击更换头像">${avatar}</div><div class="msg-bubble">${cleaned.replace(/\n/g, '<br>')}</div>`;
-    body.appendChild(div); body.scrollTop=body.scrollHeight;
+    const body = getEl('chatBody'); if (!body) return;
+    const div = document.createElement('div'); div.className = 'message ' + role;
+    const avatar = role === 'user' ? getAvatarHTML('patient') : getAvatarHTML('doctor');
+    const cleaned = String(text).replace(/\*\*/g, '');
+    div.innerHTML = `<div class="msg-avatar" title="${tr('avClickChange')}">${avatar}</div><div class="msg-bubble">${cleaned.replace(/\n/g, '<br>')}</div>`;
+    body.appendChild(div); body.scrollTop = body.scrollHeight;
 }
 function clearChat(){
-    let body=getEl('chatBody'); if(!body) return;
-    let welcome=lang==='zh'
-        ? '你好！我是脑卒中智能助手，可咨询预防、康复、养护、心理支持等问题~\n💡 小贴士：点击任意头像可以更换头像哦！'
-        : "Hello! I'm stroke assistant~\n💡 Tip: Click any avatar to change it!";
-    body.innerHTML=`<div class="message"><div class="msg-avatar" title="点击更换头像">${getAvatarHTML('doctor')}</div><div class="msg-bubble">${welcome.replace(/\n/g,'<br>')}</div></div>`;
+    const body = getEl('chatBody'); if (!body) return;
+    if (synth) { try { synth.cancel(); } catch(e){} }
+    body.innerHTML = `<div class="message"><div class="msg-avatar" title="${tr('avClickChange')}">${getAvatarHTML('doctor')}</div><div class="msg-bubble">${tr('welcome').replace(/\n/g, '<br>')}</div></div>`;
 }
 async function send(){
-    let inp=getEl('input'); if(!inp) return; let text=inp.value.trim(); if(!text) return;
-    addMsg('user',text); inp.value='';
-    let loading=document.createElement('div'); loading.className='message assistant loading-message'; loading.innerHTML=`<div class="msg-avatar" title="点击更换头像">${getAvatarHTML('doctor')}</div><div class="msg-bubble">🤔 思考中...</div>`;
-    let chatBody=getEl('chatBody'); if(chatBody) chatBody.appendChild(loading); if(chatBody) chatBody.scrollTop=chatBody.scrollHeight;
-    try{
-        const response = await fetch('/api/stream', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: text }) });
-        if(loading) loading.remove();
-        const assistantDiv = document.createElement('div'); assistantDiv.className = 'message assistant'; assistantDiv.innerHTML = `<div class="msg-avatar" title="点击更换头像">${getAvatarHTML('doctor')}</div><div class="msg-bubble"></div>`;
-        if(chatBody) chatBody.appendChild(assistantDiv);
-        const bubble = assistantDiv.querySelector('.msg-bubble');
-        let full = '';
+    if (isSending) return; // 防止重复提交
+    const inp = getEl('input'); if (!inp) return;
+    const text = inp.value.trim(); if (!text) return;
+    isSending = true;
+    const sb = getEl('sendBtn'); if (sb) sb.disabled = true;
+    addMsg('user', text); inp.value = '';
+    const chatBody = getEl('chatBody');
+    const loading = document.createElement('div');
+    loading.className = 'message assistant loading-message';
+    loading.innerHTML = `<div class="msg-avatar" title="${tr('avClickChange')}">${getAvatarHTML('doctor')}</div><div class="msg-bubble">${tr('thinking')}</div>`;
+    if (chatBody) { chatBody.appendChild(loading); chatBody.scrollTop = chatBody.scrollHeight; }
+    let full = '', assistantBubble = null;
+    const pushChunk = chunk => {
+        full += chunk;
+        if (assistantBubble) {
+            assistantBubble.innerHTML = full.replace(/\n/g, '<br>');
+            if (chatBody) chatBody.scrollTop = chatBody.scrollHeight;
+        }
+    };
+    try {
+        const response = await fetch('/api/stream', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ question: text }) });
+        if (loading && loading.parentNode) loading.remove();
+        if (!response.ok || !response.body) throw new Error('HTTP ' + response.status);
+        const div = document.createElement('div'); div.className = 'message assistant';
+        div.innerHTML = `<div class="msg-avatar" title="${tr('avClickChange')}">${getAvatarHTML('doctor')}</div><div class="msg-bubble"></div>`;
+        if (chatBody) { chatBody.appendChild(div); chatBody.scrollTop = chatBody.scrollHeight; }
+        assistantBubble = div.querySelector('.msg-bubble');
+        const handleLine = line => {
+            if (!line.startsWith('data: ')) return;
+            try { const data = JSON.parse(line.slice(6)); if (data && typeof data.chunk === 'string') pushChunk(data.chunk); } catch(e) {}
+        };
         const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = '';
         while (true) {
             const { done, value } = await reader.read(); if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n\n'); buffer = lines.pop();
-            for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                    const jsonStr = line.slice(6);
-                    try {
-                        const data = JSON.parse(jsonStr);
-                        if (data.chunk !== undefined) {
-                            full += data.chunk;
-                            bubble.innerHTML = full.replace(/\n/g, '<br>');
-                            if(chatBody) chatBody.scrollTop = chatBody.scrollHeight;
-                        }
-                    } catch(e) { console.error(e); }
-                }
-            }
+            buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n'); // 兼容 CRLF
+            const parts = buffer.split('\n\n'); buffer = parts.pop();
+            parts.forEach(handleLine);
         }
+        if (buffer) handleLine(buffer); // 处理末尾未换行的事件
         if (voiceEnabled && full) speak(full);
-    }catch(err){
-        if(loading) loading.remove();
-        addMsg('assistant','抱歉，网络错误，请稍后再试。'); console.error(err);
+    } catch(err) {
+        if (loading && loading.parentNode) loading.remove();
+        if (!full) addMsg('assistant', tr('netErr'));
+        console.error(err);
+    } finally {
+        isSending = false; if (sb) sb.disabled = false;
     }
 }
-function quickAsk(q){ let inp=getEl('input'); if(inp) inp.value=q; send(); }
+function quickAsk(q){ const inp = getEl('input'); if (inp) inp.value = q; send(); }
 
-(function(){ if(window.innerWidth<=768){ function apply(){ let sidebar=document.querySelector('.sidebar'), chatMain=document.querySelector('.chat-main'), chatContent=document.querySelector('.chat-content'); if(sidebar) sidebar.style.display='none'; if(chatMain){ chatMain.style.width='100%'; chatMain.style.flex='1'; } if(chatContent){ chatContent.style.display='flex'; chatContent.style.flexDirection='row'; } let style=document.createElement('style'); style.textContent=`body header{margin-bottom:8px!important}body header h1{font-size:24px!important;margin-bottom:2px!important}body header p{font-size:12px!important;display:none!important}body .chat-header-bar{padding:8px 12px!important}body .chat-header-bar h2{font-size:18px!important}body .header-btn{font-size:12px!important;padding:4px 8px!important}body .chat-body{padding:12px!important}body .msg-bubble{font-size:14px!important;padding:8px 12px!important}body .quick-questions button{font-size:13px!important;padding:6px 12px!important}body .chat-footer{padding:8px 12px!important}body .chat-input{font-size:14px!important;padding:8px 12px!important}body .send-btn,body .clear-btn{font-size:14px!important;padding:6px 12px!important}body .mic-btn{width:32px!important;height:32px!important;font-size:16px!important}body .message{max-width:90%!important}`; document.head.appendChild(style); } if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',apply); else apply(); } })();
-
-document.addEventListener('DOMContentLoaded',function(){
-    getEl('sendBtn')?.addEventListener('click',send); getEl('clearBtn')?.addEventListener('click',clearChat); getEl('langBtn')?.addEventListener('click',switchLang);
-    getEl('micBtn')?.addEventListener('click',toggleRec); getEl('voiceBtn')?.addEventListener('click',toggleVoice); getEl('fontBtn')?.addEventListener('click',openFontModal);
-    getEl('confirmFontBtn')?.addEventListener('click',adjustFont); getEl('enlargeBtn')?.addEventListener('click',()=>selectOpt('enlarge')); getEl('narrowBtn')?.addEventListener('click',()=>selectOpt('narrow'));
-    getEl('input')?.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); send(); } });
-    getEl('modalMask')?.addEventListener('click',closeFontModal); getEl('fontModal')?.addEventListener('click',e=>e.stopPropagation()); getEl('scaleInput')?.addEventListener('keydown',e=>{ if(e.key==='Enter') adjustFont(); });
-    let questions=["高血压怎么预防中风？","中风后吃什么好？","家人中风后怎么照顾？","怎么判断是不是中风？","中风后手脚没力气怎么办？","中风后情绪低落怎么办？","中风康复训练有哪些？","颈动脉斑块需要治疗吗？","中风后可以运动吗？","怎么帮家人做心理疏导？"];
-    for(let i=1;i<=10;i++){ let btn=getEl(`quick${i}`); if(btn) btn.addEventListener('click',()=>quickAsk(questions[i-1])); }
-
+document.addEventListener('DOMContentLoaded', function(){
+    applyLang();
+    getEl('sendBtn')?.addEventListener('click', send);
+    getEl('clearBtn')?.addEventListener('click', clearChat);
+    getEl('langBtn')?.addEventListener('click', switchLang);
+    getEl('micBtn')?.addEventListener('click', toggleRec);
+    getEl('voiceBtn')?.addEventListener('click', toggleVoice);
+    getEl('fontBtn')?.addEventListener('click', e => { e.stopPropagation(); openFontModal(); });
+    getEl('confirmFontBtn')?.addEventListener('click', adjustFont);
+    getEl('enlargeBtn')?.addEventListener('click', () => selectOpt('enlarge'));
+    getEl('narrowBtn')?.addEventListener('click', () => selectOpt('narrow'));
+    getEl('input')?.addEventListener('keydown', e => {
+        if (e.isComposing || e.keyCode === 229) return; // 中文输入法选词回车不发送
+        if (e.key === 'Enter') { e.preventDefault(); send(); }
+    });
+    getEl('fontModal')?.addEventListener('click', e => e.stopPropagation());
+    getEl('scaleInput')?.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); adjustFont(); } });
+    // 字体弹窗：点击页面其他位置自动关闭
+    document.addEventListener('click', e => {
+        const modal = getEl('fontModal'), btn = getEl('fontBtn');
+        if (modal && btn && modal.classList.contains('show') && !modal.contains(e.target) && !btn.contains(e.target)) closeFontModal();
+    });
     // ===== 头像功能初始化 =====
-    bindAvatarControls('patient'); bindAvatarControls('doctor');
-    getEl('doctorAvatarClick')?.addEventListener('click',openAvatarModal);
-    getEl('patientAvatarClick')?.addEventListener('click',openAvatarModal);
-    getEl('avatarModalClose')?.addEventListener('click',closeAvatarModal);
-    getEl('avatarModalMask')?.addEventListener('click',e=>{ if(e.target===getEl('avatarModalMask')) closeAvatarModal(); });
-    document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeAvatarModal(); });
-    getEl('chatBody')?.addEventListener('click',e=>{ if(e.target.closest('.msg-avatar')) openAvatarModal(); });
+    bindAvatarControls('doctor'); bindAvatarControls('patient');
+    getEl('doctorAvatarClick')?.addEventListener('click', openAvatarModal);
+    getEl('patientAvatarClick')?.addEventListener('click', openAvatarModal);
+    getEl('avatarModalClose')?.addEventListener('click', closeAvatarModal);
+    getEl('avatarModalMask')?.addEventListener('click', e => { if (e.target === getEl('avatarModalMask')) closeAvatarModal(); });
+    getEl('chatBody')?.addEventListener('click', e => { if (e.target.closest('.msg-avatar')) openAvatarModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeFontModal(); closeAvatarModal(); } });
 
-    // 初始化头像 + 欢迎语
     refreshAvatars();
     clearChat();
 });
 </script>
 </body>
 </html>
-
