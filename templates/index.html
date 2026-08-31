@@ -10,14 +10,15 @@
         body{background:linear-gradient(135deg,#f0f7ff,#e6f4fd);padding:20px;min-height:100vh;font-size:calc(16px * var(--font-scale));padding-bottom:90px;font-family:"PingFang SC","Microsoft YaHei",sans-serif}
         .container{max-width:1000px;margin:0 auto}
         header{text-align:center;margin-bottom:20px}
-        header h1{font-size:calc(56px * var(--font-scale));color:#0077cc;letter-spacing:2px}
-        header p{color:#666;font-size:calc(28px * var(--font-scale));margin-top:5px}
+        header h1{font-size:calc(48px * var(--font-scale));color:#0077cc;letter-spacing:2px}
         .main-card{background:#fff;border-radius:16px;box-shadow:0 8px 24px rgba(0,100,200,0.08);display:flex;flex-direction:column;height:calc(100vh - 40px - 90px);overflow:hidden}
         .chat-header-bar{background:linear-gradient(90deg,#0077cc,#0099ee);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
         .chat-header-bar h2{font-size:calc(32px * var(--font-scale));font-weight:600}
-        .header-btns{display:flex;gap:8px;position:relative}
-        .header-btn{padding:6px 12px;border-radius:20px;background:rgba(255,255,255,0.2);color:#fff;border:none;font-size:calc(26px * var(--font-scale));cursor:pointer;transition:background 0.2s;white-space:nowrap}
+        .header-btns{display:flex;gap:8px;align-items:center}
+        .header-btn{padding:6px 14px;border-radius:20px;background:rgba(255,255,255,0.2);color:#fff;border:none;font-size:calc(26px * var(--font-scale));cursor:pointer;transition:background 0.2s;white-space:nowrap}
         .header-btn:hover{background:rgba(255,255,255,0.35)}
+        .gear-ico{font-size:calc(30px * var(--font-scale));vertical-align:-2px;margin-right:4px;display:inline-block;transition:transform .5s}
+        #setBtn:hover .gear-ico{transform:rotate(120deg)}
         .chat-content{display:flex;flex:1;overflow:hidden}
         .sidebar{width:240px;background:#f8fcff;border-right:1px solid #e6f7ff;padding:30px 20px;display:flex;flex-direction:column;justify-content:center}
         .avatar-box{width:120px;height:120px;margin:0 auto 10px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 15px rgba(0,119,204,0.15);overflow:hidden;cursor:pointer;position:relative;transition:box-shadow .2s;border:2px solid #dceefb}
@@ -56,20 +57,38 @@
         .mic-btn{width:44px;height:44px;border-radius:50%;background:#0077cc;color:#fff;font-size:20px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
         .mic-btn.recording{background:#e53935;animation:pulse 1s infinite}
         @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
-        /* ===== 字体调节弹窗 ===== */
-        .font-modal{position:absolute;top:60px;right:0;background:#fff;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,0.15);padding:15px;z-index:1000;display:none;min-width:260px}
-        .font-modal.show{display:block}
-        .font-modal .modal-title{font-size:15px;font-weight:600;color:#0077cc;text-align:center;margin-bottom:10px}
-        .font-modal .opt-group{display:flex;gap:8px;margin-bottom:10px}
-        .font-modal .opt-btn{flex:1;padding:8px 0;border:1px solid #cce4f5;background:#eef3fc;color:#0077cc;border-radius:8px;cursor:pointer;font-size:14px;transition:all .2s}
-        .font-modal .opt-btn:hover{background:#d8ecfa}
-        .font-modal .opt-btn.active{background:#0077cc;color:#fff;border-color:#0077cc}
-        .font-modal .input-group{margin-bottom:10px}
-        .font-modal .input-group input{width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none}
-        .font-modal .input-group input:focus{border-color:#0077cc}
-        .font-modal .confirm-btn{width:100%;padding:9px 0;background:#0077cc;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px}
-        .font-modal .confirm-btn:hover{background:#005fa3}
-        .font-modal .tip-text{margin-top:8px;font-size:12px;color:#999;text-align:center}
+        /* ===== 通用小按钮（设置/头像弹窗共用） ===== */
+        .op-btn{padding:8px 14px;border-radius:20px;border:1px solid #cce4f5;background:#eef3fc;color:#0077cc;font-size:14px;cursor:pointer;transition:all .2s}
+        .op-btn:hover{background:#d8ecfa}
+        .op-btn.primary{background:#0077cc;color:#fff;border-color:#0077cc}
+        .op-btn.primary:hover{background:#005fa3}
+        .tip-text{margin-top:8px;font-size:12px;color:#999;text-align:center}
+        /* ===== ⚙ 设置弹窗 ===== */
+        .settings-modal-mask{position:fixed;inset:0;background:rgba(0,30,60,0.45);display:none;align-items:center;justify-content:center;z-index:2000;padding:16px}
+        .settings-modal-mask.show{display:flex}
+        .settings-modal{background:#fff;border-radius:16px;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;padding:24px 26px;box-shadow:0 12px 40px rgba(0,60,120,0.25);position:relative}
+        .settings-close{position:absolute;top:12px;right:14px;width:34px;height:34px;border-radius:50%;border:none;background:#eef3fc;color:#666;font-size:20px;cursor:pointer;line-height:1;transition:all .2s}
+        .settings-close:hover{background:#fdecec;color:#e53935}
+        .settings-title{font-size:22px;color:#0077cc;font-weight:600;text-align:center;margin-bottom:16px}
+        .settings-section{background:#f8fcff;border:1px solid #e6f7ff;border-radius:12px;padding:16px;margin-bottom:14px}
+        .section-label{font-size:15px;font-weight:600;color:#333;margin-bottom:12px}
+        .lang-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+        .lang-current{font-size:14px;color:#666}
+        .lang-current b{color:#0077cc}
+        .font-scale-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+        .font-step-btn{width:46px;height:40px;border-radius:20px;border:1px solid #cce4f5;background:#eef3fc;color:#0077cc;font-size:16px;font-weight:700;cursor:pointer;transition:all .2s;flex-shrink:0}
+        .font-step-btn:hover{background:#d8ecfa}
+        .font-step-btn:active{transform:scale(.94)}
+        #fontSlider{flex:1;accent-color:#0077cc;height:6px;cursor:pointer}
+        .font-value-row{font-size:14px;color:#666;text-align:center;margin-bottom:10px}
+        .font-value-row b{color:#0077cc;font-size:16px}
+        .font-presets{display:flex;gap:8px;justify-content:center;margin-bottom:12px;flex-wrap:wrap}
+        .preset-btn{padding:7px 16px;border-radius:18px;border:1px solid #cce4f5;background:#fff;color:#0077cc;font-size:13px;cursor:pointer;transition:all .2s}
+        .preset-btn:hover{background:#d8ecfa}
+        .preset-btn.active{background:#0077cc;color:#fff;border-color:#0077cc}
+        .font-num-row{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap}
+        .font-num-row input{width:90px;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;text-align:center}
+        .font-num-row input:focus{border-color:#0077cc}
         /* ===== 头像设置弹窗 ===== */
         .avatar-modal-mask{position:fixed;inset:0;background:rgba(0,30,60,0.45);display:none;align-items:center;justify-content:center;z-index:2000;padding:16px}
         .avatar-modal-mask.show{display:flex}
@@ -85,10 +104,6 @@
         .preset-item:hover{transform:scale(1.12)}
         .preset-item.selected{border-color:#0077cc;box-shadow:0 0 0 3px rgba(0,119,204,0.2)}
         .avatar-ops{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
-        .op-btn{padding:8px 14px;border-radius:20px;border:1px solid #cce4f5;background:#eef3fc;color:#0077cc;font-size:14px;cursor:pointer;transition:all .2s}
-        .op-btn:hover{background:#d8ecfa}
-        .op-btn.primary{background:#0077cc;color:#fff;border-color:#0077cc}
-        .op-btn.primary:hover{background:#005fa3}
         .close-btn{display:block;margin:16px auto 0;background:#0077cc;color:#fff;border-color:#0077cc;padding:8px 34px}
         .close-btn:hover{background:#005fa3}
         /* ===== 移动端适配 ===== */
@@ -98,11 +113,12 @@
             .sidebar{display:none}
             .chat-main{width:100%}
             header{margin-bottom:8px}
-            header h1{font-size:24px;margin-bottom:2px}
-            header p{display:none}
+            header h1{font-size:18px;letter-spacing:0}
             .chat-header-bar{padding:8px 12px}
             .chat-header-bar h2{font-size:18px}
-            .header-btn{font-size:12px;padding:4px 8px}
+            .header-btn{font-size:12px;padding:5px 10px}
+            .gear-ico{font-size:16px;margin-right:0}
+            .gear-txt{display:none}
             .chat-body{padding:12px}
             .msg-bubble{font-size:14px;padding:8px 12px}
             .quick-questions button{font-size:13px;padding:6px 12px}
@@ -111,7 +127,7 @@
             .send-btn,.clear-btn{font-size:14px;padding:6px 12px}
             .mic-btn{width:34px;height:34px;font-size:16px}
             .message{max-width:90%}
-            .font-modal{position:fixed;top:52px;left:10px;right:10px;min-width:0}
+            .settings-modal{padding:18px}
             .avatar-modal{padding:16px}
             .avatar-setting-block{min-width:100%}
         }
@@ -119,24 +135,13 @@
 </head>
 <body>
 <div class="container">
-    <header><h1>福医卒中通</h1><p id="subtitle" data-i18n="subtitle">脑卒中智能问答助手</p></header>
+    <header><h1 data-i18n="mainTitle">福医卒中通·脑卒中智能问答助手</h1></header>
     <div class="main-card">
         <div class="chat-header-bar">
             <h2 data-i18n="chatTitle">脑卒中智能咨询</h2>
             <div class="header-btns">
-                <button class="header-btn" id="langBtn">切换英文</button>
-                <button class="header-btn" id="fontBtn" data-i18n="fontBtn">字体调节</button>
                 <button class="header-btn" id="voiceBtn">语音播报：开</button>
-                <div class="font-modal" id="fontModal">
-                    <div class="modal-title" data-i18n="fontTitle">字体大小调节</div>
-                    <div class="opt-group">
-                        <button class="opt-btn" id="enlargeBtn" data-i18n="fontEnlarge">放大</button>
-                        <button class="opt-btn" id="narrowBtn" data-i18n="fontNarrow">缩小</button>
-                    </div>
-                    <div class="input-group"><input type="number" id="scaleInput" step="0.5"></div>
-                    <button class="confirm-btn" id="confirmFontBtn" data-i18n="fontConfirm">确认调节</button>
-                    <div class="tip-text" data-i18n="fontTip">放大 1-4　缩小 0.3-1</div>
-                </div>
+                <button class="header-btn" id="setBtn" title="设置"><span class="gear-ico">⚙</span><span class="gear-txt" data-i18n="setBtn">设置</span></button>
             </div>
         </div>
         <div class="chat-content">
@@ -172,6 +177,47 @@
     <button class="send-btn clear-btn" id="clearBtn">清空</button>
 </div>
 
+<!-- ===== ⚙ 设置弹窗（语言 + 字体） ===== -->
+<div class="settings-modal-mask" id="settingsModalMask">
+    <div class="settings-modal" role="dialog" aria-label="设置">
+        <button class="settings-close" id="settingsClose" title="关闭">×</button>
+        <div class="settings-title" data-i18n="setTitle">⚙️ 设置</div>
+
+        <!-- 语言设置 -->
+        <div class="settings-section">
+            <div class="section-label" data-i18n="langLabel">🌐 界面语言</div>
+            <div class="lang-row">
+                <span class="lang-current" id="langCurrent">当前：中文</span>
+                <button class="op-btn primary" id="langSwitchBtn">切换到 English</button>
+            </div>
+        </div>
+
+        <!-- 字体设置 -->
+        <div class="settings-section">
+            <div class="section-label" data-i18n="fontLabel">🔤 字体大小</div>
+            <div class="font-scale-row">
+                <button class="font-step-btn" id="fontMinusBtn" title="缩小">A−</button>
+                <input type="range" id="fontSlider" min="0.3" max="4" step="0.1" value="1">
+                <button class="font-step-btn" id="fontPlusBtn" title="放大">A＋</button>
+            </div>
+            <div class="font-value-row"><span data-i18n="fontCur">当前倍数：</span><b id="fontScaleDisp">1.0x</b></div>
+            <div class="font-presets">
+                <button class="preset-btn" data-scale="0.8" data-i18n="fontPS">小</button>
+                <button class="preset-btn" data-scale="1" data-i18n="fontPM">标准</button>
+                <button class="preset-btn" data-scale="1.5" data-i18n="fontPL">大</button>
+                <button class="preset-btn" data-scale="2" data-i18n="fontPX">特大</button>
+                <button class="preset-btn" data-scale="3" data-i18n="fontPXX">超大</button>
+            </div>
+            <div class="font-num-row">
+                <input type="number" id="fontNumInput" min="0.3" max="4" step="0.1" placeholder="0.3-4">
+                <button class="op-btn" id="fontApplyBtn" data-i18n="fontApply">应用</button>
+                <button class="op-btn" id="fontResetBtn" data-i18n="fontReset">恢复默认</button>
+            </div>
+            <div class="tip-text" data-i18n="fontRangeTip">拖动滑块 / 点 A＋A− / 输入数值，范围 0.3 - 4.0，立即生效</div>
+        </div>
+    </div>
+</div>
+
 <!-- ===== 头像设置弹窗 ===== -->
 <div class="avatar-modal-mask" id="avatarModalMask">
     <div class="avatar-modal" role="dialog" aria-label="头像设置">
@@ -204,19 +250,22 @@
 </div>
 
 <script>
-let lang = "zh", voiceEnabled = true, fontOpt = "enlarge", isRecording = false, isSending = false, recognition = null;
+let lang = "zh", voiceEnabled = true, isRecording = false, isSending = false, recognition = null;
 const synth = ('speechSynthesis' in window) ? window.speechSynthesis : null;
 
 /* ================= 中英文文案（切换语言时全界面同步） ================= */
 const I18N = {
 zh:{
-    subtitle:'脑卒中智能问答助手', chatTitle:'脑卒中智能咨询',
-    langBtn:'切换英文', fontBtn:'字体调节',
+    mainTitle:'福医卒中通·脑卒中智能问答助手', chatTitle:'脑卒中智能咨询',
+    setBtn:'设置', setTitle:'⚙️ 设置',
+    langLabel:'🌐 界面语言', langNow:'当前：中文', langTo:'切换到 English',
+    fontLabel:'🔤 字体大小', fontCur:'当前倍数：', fontApply:'应用', fontReset:'恢复默认',
+    fontPS:'小', fontPM:'标准', fontPL:'大', fontPX:'特大', fontPXX:'超大',
+    fontRangeTip:'拖动滑块 / 点 A＋A− / 输入数值，范围 0.3 - 4.0，立即生效',
     voiceOn:'语音播报：开', voiceOff:'语音播报：关',
-    fontTitle:'字体大小调节', fontEnlarge:'放大', fontNarrow:'缩小', fontConfirm:'确认调节', fontTip:'放大 1-4　缩小 0.3-1',
     placeholder:'问脑卒中相关问题：预防、康复、养护、心理支持...',
-    send:'发送', clear:'清空', micTitle:'语音输入（说完自动发送）',
-    welcome:'你好！我是脑卒中智能助手，可咨询预防、康复、养护、心理支持等问题~\n💡 小贴士：点击任意头像可以更换头像哦！',
+    send:'发送', clear:'清空', micTitle:'语音输入（说完自动发送）', closeTip:'关闭',
+    welcome:'你好！我是脑卒中智能问答助手，可咨询预防、康复、养护、心理支持等问题~\n💡 小贴士：点击任意头像可以更换头像哦！',
     thinking:'🤔 思考中...', netErr:'抱歉，网络错误，请稍后再试。',
     sideDoctor:'福医卒中通助手', sidePatient:'咨询患者',
     avTitle:'🎨 头像设置',
@@ -233,12 +282,15 @@ zh:{
     questions:['高血压怎么预防中风？','中风后吃什么好？','家人中风后怎么照顾？','怎么判断是不是中风？','中风后手脚没力气怎么办？','中风后情绪低落怎么办？','中风康复训练有哪些？','颈动脉斑块需要治疗吗？','中风后可以运动吗？','怎么帮家人做心理疏导？']
 },
 en:{
-    subtitle:'Intelligent Stroke Q&A Assistant', chatTitle:'Intelligent Stroke Consultation',
-    langBtn:'切换中文', fontBtn:'Font Size',
+    mainTitle:'Fuyi Stroke Assistant · Intelligent Stroke Q&A', chatTitle:'Intelligent Stroke Consultation',
+    setBtn:'Settings', setTitle:'⚙️ Settings',
+    langLabel:'🌐 Language', langNow:'Current: English', langTo:'切换到中文',
+    fontLabel:'🔤 Font Size', fontCur:'Current scale: ', fontApply:'Apply', fontReset:'Reset',
+    fontPS:'S', fontPM:'Normal', fontPL:'Large', fontPX:'XL', fontPXX:'XXL',
+    fontRangeTip:'Drag slider / tap A＋A− / type a value (0.3 - 4.0), applies instantly',
     voiceOn:'Voice: ON', voiceOff:'Voice: OFF',
-    fontTitle:'Adjust Font Size', fontEnlarge:'Larger', fontNarrow:'Smaller', fontConfirm:'Apply', fontTip:'Larger 1-4 · Smaller 0.3-1',
     placeholder:'Ask stroke-related questions: prevention, rehab, care, emotional support...',
-    send:'Send', clear:'Clear', micTitle:'Voice input (auto-sends when done)',
+    send:'Send', clear:'Clear', micTitle:'Voice input (auto-sends when done)', closeTip:'Close',
     welcome:"Hello! I'm your stroke assistant. Ask about prevention, rehab, daily care or emotional support~\n💡 Tip: click any avatar to change it!",
     thinking:'🤔 Thinking...', netErr:'Sorry, network error. Please try again later.',
     sideDoctor:'Stroke Assistant', sidePatient:'Patient (Me)',
@@ -261,11 +313,14 @@ function applyLang(){
     document.title = lang === 'zh' ? '福医卒中通 · 脑卒中智能问答助手' : 'Fuyi Stroke Assistant · Intelligent Stroke Q&A';
     document.querySelectorAll('[data-i18n]').forEach(el => { const v = tr(el.getAttribute('data-i18n')); if (v) el.innerHTML = v; });
     const vb = getEl('voiceBtn'); if (vb) vb.textContent = voiceEnabled ? tr('voiceOn') : tr('voiceOff');
-    const lb = getEl('langBtn');  if (lb) lb.textContent = tr('langBtn');
+    const sb = getEl('setBtn');   if (sb) sb.title = tr('setTitle').replace('⚙️ ','');
+    const sc = getEl('settingsClose'); if (sc) sc.title = tr('closeTip');
     const inp = getEl('input');   if (inp) inp.placeholder = tr('placeholder');
     const mic = getEl('micBtn');  if (mic) mic.title = tr('micTitle');
-    const sb = getEl('sendBtn');  if (sb) sb.textContent = tr('send');
+    const sdb = getEl('sendBtn'); if (sdb) sdb.textContent = tr('send');
     const cb = getEl('clearBtn'); if (cb) cb.textContent = tr('clear');
+    const lc = getEl('langCurrent');    if (lc) lc.textContent = tr('langNow');
+    const lsb = getEl('langSwitchBtn'); if (lsb) lsb.textContent = tr('langTo');
     const qs = tr('questions');
     for (let i = 1; i <= 10; i++) { const b = getEl('quick' + i); if (b && qs[i-1]) b.textContent = qs[i-1]; }
 }
@@ -274,6 +329,37 @@ function applyLang(){
 function safeGet(k, d){ try { const v = localStorage.getItem(k); return v === null ? d : v; } catch(e){ return d; } }
 function safeSet(k, v){ try { localStorage.setItem(k, v); return true; } catch(e){ return false; } }
 function safeDel(k){ try { localStorage.removeItem(k); } catch(e){} }
+function getEl(id){ return document.getElementById(id); }
+
+/* ================= ⚙ 设置弹窗 ================= */
+function openSettings(){ getEl('settingsModalMask')?.classList.add('show'); applyFontScale(fontScale); }
+function closeSettings(){ getEl('settingsModalMask')?.classList.remove('show'); }
+
+/* ===== 字体大小（滑块 + A＋A− + 预设 + 数值，实时生效，持久保存） ===== */
+const FONT_MIN = 0.3, FONT_MAX = 4;
+let fontScale = Math.min(FONT_MAX, Math.max(FONT_MIN, parseFloat(safeGet('fyyzt_font_scale', '1')) || 1));
+function applyFontScale(v){
+    fontScale = Math.min(FONT_MAX, Math.max(FONT_MIN, v));
+    document.documentElement.style.setProperty('--font-scale', fontScale);
+    const slider = getEl('fontSlider'), num = getEl('fontNumInput'), disp = getEl('fontScaleDisp');
+    if (slider) slider.value = fontScale;
+    if (num) num.value = Math.round(fontScale * 10) / 10;
+    if (disp) disp.textContent = fontScale.toFixed(1) + 'x';
+    document.querySelectorAll('.preset-btn[data-scale]').forEach(b => {
+        b.classList.toggle('active', Math.abs(parseFloat(b.dataset.scale) - fontScale) < 0.001);
+    });
+    safeSet('fyyzt_font_scale', String(fontScale));
+}
+
+/* ===== 语言切换 ===== */
+let switchingLang = false;
+async function switchLang(){
+    if (switchingLang) return; switchingLang = true;
+    lang = lang === 'zh' ? 'en' : 'zh';
+    await fetch('/api/switch_lang', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ lang }) }).catch(e => console.log(e));
+    if (recognition) recognition.lang = lang === 'zh' ? 'zh-CN' : 'en-US';
+    applyLang(); clearChat(); switchingLang = false;
+}
 
 /* ================= 头像系统（基础头像：⛑️ 医生 / ♿ 患者） =================
    存储值三种形态：''=基础头像 | 'p:数字'=预设序号 | 'data:image/...'=上传图片 */
@@ -351,7 +437,7 @@ function processAndStoreImage(file, role){
                 ctx.drawImage(img, (img.width - min) / 2, (img.height - min) / 2, min, min, 0, 0, size, size);
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
                 avatarStore[role] = dataUrl;
-                if (!safeSet('fyyzt_avatar_' + role, dataUrl)) { /* 存储失败仍可本次会话使用 */ }
+                safeSet('fyyzt_avatar_' + role, dataUrl);
                 refreshAvatars(); renderAvatarModal();
             } catch(err) { alert(tr('imgFail')); console.error(err); }
         };
@@ -374,33 +460,6 @@ function bindAvatarControls(role){
         refreshAvatars(); renderAvatarModal();
     });
 }
-
-/* ================= 基础工具 ================= */
-function getEl(id){ return document.getElementById(id); }
-
-/* ===== 字体调节 ===== */
-function selectOpt(opt){
-    fontOpt = opt;
-    const eb = getEl('enlargeBtn'), nb = getEl('narrowBtn');
-    if (eb) eb.className = opt === 'enlarge' ? 'opt-btn active' : 'opt-btn';
-    if (nb) nb.className = opt === 'narrow' ? 'opt-btn active' : 'opt-btn';
-    const si = getEl('scaleInput');
-    if (si) {
-        if (opt === 'enlarge') { si.min = 1; si.max = 4; si.step = 0.5; si.placeholder = '1 - 4'; }
-        else { si.min = 0.3; si.max = 1; si.step = 0.1; si.placeholder = '0.3 - 1'; }
-        si.value = ''; si.focus();
-    }
-}
-function adjustFont(){
-    const si = getEl('scaleInput'); if (!si) return;
-    let v = parseFloat(si.value);
-    if (isNaN(v) || v <= 0) v = 1;
-    v = fontOpt === 'enlarge' ? Math.min(4, Math.max(1, v)) : Math.min(1, Math.max(0.3, v));
-    document.documentElement.style.setProperty('--font-scale', v);
-    si.value = v; closeFontModal();
-}
-function openFontModal(){ getEl('fontModal')?.classList.add('show'); selectOpt(fontOpt); }
-function closeFontModal(){ getEl('fontModal')?.classList.remove('show'); }
 
 /* ===== 语音输入 / 播报 ===== */
 function initRecognition(){
@@ -448,16 +507,6 @@ function toggleVoice(){
     const btn = getEl('voiceBtn'); if (btn) btn.textContent = voiceEnabled ? tr('voiceOn') : tr('voiceOff');
     if (!voiceEnabled) synth.cancel();
     else { const last = getLastAssistantMessage(); if (last) speak(last); }
-}
-
-/* ===== 语言切换 ===== */
-let switchingLang = false;
-async function switchLang(){
-    if (switchingLang) return; switchingLang = true;
-    lang = lang === 'zh' ? 'en' : 'zh';
-    await fetch('/api/switch_lang', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ lang }) }).catch(e => console.log(e));
-    if (recognition) recognition.lang = lang === 'zh' ? 'zh-CN' : 'en-US';
-    applyLang(); clearChat(); switchingLang = false;
 }
 
 /* ===== 消息 ===== */
@@ -529,33 +578,50 @@ document.addEventListener('DOMContentLoaded', function(){
     applyLang();
     getEl('sendBtn')?.addEventListener('click', send);
     getEl('clearBtn')?.addEventListener('click', clearChat);
-    getEl('langBtn')?.addEventListener('click', switchLang);
     getEl('micBtn')?.addEventListener('click', toggleRec);
     getEl('voiceBtn')?.addEventListener('click', toggleVoice);
-    getEl('fontBtn')?.addEventListener('click', e => { e.stopPropagation(); openFontModal(); });
-    getEl('confirmFontBtn')?.addEventListener('click', adjustFont);
-    getEl('enlargeBtn')?.addEventListener('click', () => selectOpt('enlarge'));
-    getEl('narrowBtn')?.addEventListener('click', () => selectOpt('narrow'));
     getEl('input')?.addEventListener('keydown', e => {
         if (e.isComposing || e.keyCode === 229) return; // 中文输入法选词回车不发送
         if (e.key === 'Enter') { e.preventDefault(); send(); }
     });
-    getEl('fontModal')?.addEventListener('click', e => e.stopPropagation());
-    getEl('scaleInput')?.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); adjustFont(); } });
-    // 字体弹窗：点击页面其他位置自动关闭
-    document.addEventListener('click', e => {
-        const modal = getEl('fontModal'), btn = getEl('fontBtn');
-        if (modal && btn && modal.classList.contains('show') && !modal.contains(e.target) && !btn.contains(e.target)) closeFontModal();
+
+    // ===== ⚙ 设置功能 =====
+    getEl('setBtn')?.addEventListener('click', openSettings);
+    getEl('settingsClose')?.addEventListener('click', closeSettings);
+    getEl('settingsModalMask')?.addEventListener('click', e => { if (e.target === getEl('settingsModalMask')) closeSettings(); });
+    // 语言
+    getEl('langSwitchBtn')?.addEventListener('click', switchLang);
+    // 字体：滑块实时生效
+    getEl('fontSlider')?.addEventListener('input', e => applyFontScale(parseFloat(e.target.value)));
+    // 字体：A＋ / A− 按钮（步进 0.25）
+    getEl('fontPlusBtn')?.addEventListener('click', () => applyFontScale(fontScale + 0.25));
+    getEl('fontMinusBtn')?.addEventListener('click', () => applyFontScale(fontScale - 0.25));
+    // 字体：预设按钮
+    document.querySelectorAll('.preset-btn[data-scale]').forEach(b => {
+        b.addEventListener('click', () => applyFontScale(parseFloat(b.dataset.scale)));
     });
-    // ===== 头像功能初始化 =====
+    // 字体：数值输入 + 应用 / 恢复默认
+    getEl('fontApplyBtn')?.addEventListener('click', () => {
+        const num = getEl('fontNumInput'); if (!num) return;
+        let v = parseFloat(num.value); if (isNaN(v) || v <= 0) v = 1;
+        applyFontScale(v);
+    });
+    getEl('fontResetBtn')?.addEventListener('click', () => applyFontScale(1));
+    getEl('fontNumInput')?.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); getEl('fontApplyBtn')?.click(); } });
+
+    // ===== 头像功能 =====
     bindAvatarControls('doctor'); bindAvatarControls('patient');
     getEl('doctorAvatarClick')?.addEventListener('click', openAvatarModal);
     getEl('patientAvatarClick')?.addEventListener('click', openAvatarModal);
     getEl('avatarModalClose')?.addEventListener('click', closeAvatarModal);
     getEl('avatarModalMask')?.addEventListener('click', e => { if (e.target === getEl('avatarModalMask')) closeAvatarModal(); });
     getEl('chatBody')?.addEventListener('click', e => { if (e.target.closest('.msg-avatar')) openAvatarModal(); });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeFontModal(); closeAvatarModal(); } });
 
+    // Esc 统一关闭所有弹窗
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeSettings(); closeAvatarModal(); } });
+
+    // 初始化：恢复上次的字体大小 + 头像 + 欢迎语
+    applyFontScale(fontScale);
     refreshAvatars();
     clearChat();
 });
