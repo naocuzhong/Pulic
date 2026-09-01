@@ -19,7 +19,7 @@ if DASHSCOPE_API_KEY:
 else:
     client = None
 
-MODEL_NAME = "qwen3-32b-b858345896df"
+MODEL_NAME = "qwen3.5-27b-558634c99d67"
 
 @app.after_request
 def add_headers(response):
