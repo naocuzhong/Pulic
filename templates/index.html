@@ -8,17 +8,27 @@
         *{margin:0;padding:0;box-sizing:border-box}
         :root{--font-scale:1;--emoji-font:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji","Twemoji Mozilla",sans-serif}
         body{background:linear-gradient(135deg,#f0f7ff,#e6f4fd);padding:20px;min-height:100vh;font-size:calc(16px * var(--font-scale));padding-bottom:90px;font-family:"PingFang SC","Microsoft YaHei",sans-serif}
-        .container{max-width:1000px;margin:0 auto}
-        header{text-align:center;margin-bottom:20px}
-        header h1{font-size:min(calc(48px * var(--font-scale)),60px);color:#0077cc;letter-spacing:2px}
+        .container{max-width:1000px;margin:0 auto;position:relative;z-index:1}
         .main-card{background:#fff;border-radius:16px;box-shadow:0 8px 24px rgba(0,100,200,0.08);display:flex;flex-direction:column;height:calc(100vh - 40px - 90px);overflow:hidden}
-        .chat-header-bar{background:linear-gradient(90deg,#0077cc,#0099ee);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
-        .chat-header-bar h2{font-size:min(calc(32px * var(--font-scale)),36px);font-weight:600}
-        .header-btns{display:flex;gap:8px;align-items:center}
+        .chat-header-bar{background:linear-gradient(90deg,#0077cc,#0099ee);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+        .chat-header-bar h2{font-size:min(calc(25px * var(--font-scale)),30px);font-weight:700;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .header-btns{display:flex;gap:8px;align-items:center;flex-shrink:0}
         .header-btn{padding:6px 14px;border-radius:20px;background:rgba(255,255,255,0.2);color:#fff;border:none;font-size:min(calc(26px * var(--font-scale)),30px);cursor:pointer;transition:background 0.2s;white-space:nowrap}
         .header-btn:hover{background:rgba(255,255,255,0.35)}
         .gear-ico{font-size:min(calc(30px * var(--font-scale)),32px);vertical-align:-2px;margin-right:4px;display:inline-block;transition:transform .5s}
         #setBtn:hover .gear-ico{transform:rotate(120deg)}
+        /* ===== 🎈 背景悬浮祝福语 / 表情包（半透明、不遮挡、不响应点击） ===== */
+        .float-decor{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+        .fd-item{position:absolute;bottom:-70px;opacity:0;will-change:transform,opacity;user-select:none;pointer-events:none;animation:fdFloat linear infinite;line-height:1.4}
+        .fd-word{font-weight:600;color:#0a86d8;letter-spacing:2px}
+        @keyframes fdFloat{
+            0%{transform:translate3d(0,0,0) rotate(-5deg);opacity:0}
+            10%{opacity:var(--fd-op,.2)}
+            50%{transform:translate3d(var(--fd-sway,20px),-55vh,0) rotate(5deg)}
+            90%{opacity:var(--fd-op,.2)}
+            100%{transform:translate3d(0,-115vh,0) rotate(-3deg);opacity:0}
+        }
+        @media (prefers-reduced-motion:reduce){.fd-item{display:none}}
         .chat-content{display:flex;flex:1;overflow:hidden}
         .sidebar{width:240px;background:#f8fcff;border-right:1px solid #e6f7ff;padding:30px 20px;display:flex;flex-direction:column;justify-content:center}
         .avatar-box{width:120px;height:120px;margin:0 auto 10px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 15px rgba(0,119,204,0.15);overflow:hidden;cursor:pointer;position:relative;transition:box-shadow .2s;border:2px solid #dceefb}
@@ -41,7 +51,6 @@
         .msg-avatar{width:40px;height:40px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.05);flex-shrink:0;overflow:hidden;cursor:pointer}
         .msg-bubble{padding:12px 16px;border-radius:14px;background:#fff;border:1px solid #eee;line-height:1.5;font-size:min(calc(28px * var(--font-scale)),60px);word-break:break-word;box-shadow:0 2px 8px rgba(0,0,0,0.03)}
         .message.user .msg-bubble{background:#0077cc;color:#fff;border:none}
-        /* ===== 消息内容列 + 🔊 喇叭快捷键 ===== */
         .msg-content{display:flex;flex-direction:column;gap:5px;min-width:0;max-width:100%}
         .speak-btn{align-self:flex-start;display:inline-flex;align-items:center;gap:4px;background:#eef3fc;border:1px solid #cce4f5;color:#0077cc;border-radius:14px;font-size:12px;padding:3px 12px;cursor:pointer;transition:all .2s;font-family:var(--emoji-font)}
         .speak-btn:hover{background:#d8ecfa;transform:translateY(-1px)}
@@ -62,18 +71,15 @@
         .mic-btn{width:44px;height:44px;border-radius:50%;background:#0077cc;color:#fff;font-size:20px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
         .mic-btn.recording{background:#e53935;animation:pulse 1s infinite}
         @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
-        /* ===== 通用小按钮 ===== */
         .op-btn{padding:8px 14px;border-radius:20px;border:1px solid #cce4f5;background:#eef3fc;color:#0077cc;font-size:14px;cursor:pointer;transition:all .2s}
         .op-btn:hover{background:#d8ecfa}
         .op-btn.primary{background:#0077cc;color:#fff;border-color:#0077cc}
         .op-btn.primary:hover{background:#005fa3}
         .op-btn:disabled{opacity:.55;cursor:not-allowed}
         .tip-text{margin-top:8px;font-size:12px;color:#999;text-align:center}
-        /* ===== 页内 Toast 提示（替代被浏览器拦截的 alert） ===== */
         .toast-wrap{position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:5000;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;max-width:92vw}
         .toast{background:rgba(20,40,60,.92);color:#fff;padding:10px 18px;border-radius:10px;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.25);animation:toastIn .25s;line-height:1.6;white-space:pre-wrap;max-width:92vw}
         @keyframes toastIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
-        /* ===== ⚙ 设置弹窗 ===== */
         .settings-modal-mask{position:fixed;inset:0;background:rgba(0,30,60,0.45);display:none;align-items:center;justify-content:center;z-index:2000;padding:16px}
         .settings-modal-mask.show{display:flex}
         .settings-modal{background:#fff;border-radius:16px;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:24px 26px;box-shadow:0 12px 40px rgba(0,60,120,0.25);position:relative}
@@ -98,7 +104,6 @@
         .font-num-row{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap}
         .font-num-row input{width:90px;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;text-align:center}
         .font-num-row input:focus{border-color:#0077cc}
-        /* ===== 🔊 语音播报设置 ===== */
         .voice-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
         .voice-state-txt{font-size:15px;color:#333;font-weight:600}
         .voice-state-sub{font-size:12px;color:#999;margin-top:2px}
@@ -109,16 +114,13 @@
         .voice-speed-label{font-size:13px;color:#666;margin-bottom:8px}
         .voice-speed-btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
         .voice-preview-row{text-align:center}
-        /* ===== 📁 记录保存 ===== */
         .record-row{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin-bottom:10px}
         .audio-select-label{font-size:13px;color:#666;width:100%;text-align:center}
         .audio-select{flex:1;min-width:200px;padding:8px 10px;border:1px solid #cce4f5;border-radius:8px;font-size:13px;color:#333;background:#fff;outline:none;cursor:pointer}
         .audio-select:focus{border-color:#0077cc}
         .record-divider{border-top:1px dashed #d6ecfa;margin:12px 0}
-        /* ===== 页内确认弹窗（替代被拦截的 confirm） ===== */
         #confirmText{font-size:14px;color:#444;line-height:1.8;white-space:pre-wrap;margin:0 0 18px}
         .confirm-btns{display:flex;gap:12px;justify-content:center}
-        /* ===== 头像设置弹窗 ===== */
         .avatar-modal-mask{position:fixed;inset:0;background:rgba(0,30,60,0.45);display:none;align-items:center;justify-content:center;z-index:2000;padding:16px}
         .avatar-modal-mask.show{display:flex}
         .avatar-modal{background:#fff;border-radius:16px;max-width:640px;width:100%;max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:22px 24px;box-shadow:0 12px 40px rgba(0,60,120,0.25)}
@@ -135,16 +137,13 @@
         .avatar-ops{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
         .close-btn{display:block;margin:16px auto 0;background:#0077cc;color:#fff;border-color:#0077cc;padding:8px 34px}
         .close-btn:hover{background:#005fa3}
-        /* ===== 移动端适配 ===== */
         @media (max-width:768px){
             body{padding:12px;padding-bottom:74px}
             .main-card{height:calc(100vh - 24px - 74px)}
             .sidebar{display:none}
             .chat-main{width:100%}
-            header{margin-bottom:8px}
-            header h1{font-size:18px;letter-spacing:0}
             .chat-header-bar{padding:8px 12px}
-            .chat-header-bar h2{font-size:18px}
+            .chat-header-bar h2{font-size:15px;letter-spacing:0}
             .header-btn{font-size:12px;padding:5px 10px}
             .gear-ico{font-size:16px;margin-right:0}
             .gear-txt{display:none}
@@ -164,10 +163,9 @@
 </head>
 <body>
 <div class="container">
-    <header><h1 data-i18n="mainTitle">福医卒中通·脑卒中智能问答助手</h1></header>
     <div class="main-card">
         <div class="chat-header-bar">
-            <h2 data-i18n="chatTitle">脑卒中智能咨询</h2>
+            <h2 data-i18n="mainTitle">福医卒中通·脑卒中智能问答助手</h2>
             <div class="header-btns">
                 <button class="header-btn" id="setBtn" title="设置"><span class="gear-ico">⚙</span><span class="gear-txt" data-i18n="setBtn">设置</span></button>
             </div>
@@ -179,7 +177,7 @@
                         <div class="avatar-inner" id="doctorAvatarBox"></div>
                         <div class="change-hint" data-i18n="avChange">📷 更换头像</div>
                     </div>
-                    <h3 data-i18n="sideDoctor">福医卒中通助手</h3>
+                    <h3 data-i18n="sideDoctor">福医卒中通</h3>
                 </div>
                 <div class="avatar-card">
                     <div class="avatar-box patient" id="patientAvatarClick" title="点击更换头像">
@@ -205,10 +203,8 @@
     <button class="send-btn clear-btn" id="clearBtn">清空</button>
 </div>
 
-<!-- Toast 容器（页内提示，不会被浏览器拦截） -->
 <div class="toast-wrap" id="toastWrap"></div>
 
-<!-- ===== 页内确认弹窗（替代 confirm） ===== -->
 <div class="avatar-modal-mask" id="confirmMask">
     <div class="settings-modal" style="max-width:420px">
         <div class="settings-title" data-i18n="confirmTitle">请确认</div>
@@ -220,7 +216,6 @@
     </div>
 </div>
 
-<!-- ===== ⚙ 设置弹窗（功能不变：语言 + 字体 + 语音播报 + 记录保存） ===== -->
 <div class="settings-modal-mask" id="settingsModalMask">
     <div class="settings-modal" role="dialog" aria-label="设置">
         <button class="settings-close" id="settingsClose" title="关闭">×</button>
@@ -266,6 +261,12 @@
                 </div>
                 <div class="toggle-switch on" id="voiceToggle" role="switch" aria-checked="true" title="语音播报开关"></div>
             </div>
+            <div class="voice-speed-label" data-i18n="voiceGenderLabel">播报声音</div>
+            <div class="voice-speed-btns">
+                <button class="preset-btn" data-gender="auto" data-i18n="voiceGenderAuto">跟随系统</button>
+                <button class="preset-btn" data-gender="female" data-i18n="voiceGenderFemale">女声</button>
+                <button class="preset-btn" data-gender="male" data-i18n="voiceGenderMale">男声</button>
+            </div>
             <div class="voice-speed-label" data-i18n="voiceSpeedLabel">播报速度</div>
             <div class="voice-speed-btns">
                 <button class="preset-btn" data-rate="0.5">0.5x</button>
@@ -277,7 +278,7 @@
             <div class="voice-preview-row">
                 <button class="op-btn primary" id="voicePreviewBtn" data-i18n="voicePreview">🔊 试听效果</button>
             </div>
-            <div class="tip-text" data-i18n="voiceTip">五档速度点击即生效并自动保存，试听可体验当前速度</div>
+            <div class="tip-text" data-i18n="voiceTip">声音与速度点击即生效并自动保存，试听可体验当前效果（已内置卒中等多音字发音修正）</div>
         </div>
 
         <div class="settings-section">
@@ -296,7 +297,6 @@
     </div>
 </div>
 
-<!-- ===== 头像设置弹窗 ===== -->
 <div class="avatar-modal-mask" id="avatarModalMask">
     <div class="avatar-modal" role="dialog" aria-label="头像设置">
         <div class="avatar-modal-title" data-i18n="avTitle">🎨 头像设置</div>
@@ -334,16 +334,18 @@ const synth = ('speechSynthesis' in window) ? window.speechSynthesis : null;
 /* ================= 中英文文案 ================= */
 const I18N = {
 zh:{
-    mainTitle:'福医卒中通·脑卒中智能问答助手', chatTitle:'脑卒中智能咨询',
+    mainTitle:'福医卒中通·脑卒中智能问答助手',
     setBtn:'设置', setTitle:'⚙️ 设置',
     langLabel:'🌐 界面语言', langNow:'当前：中文', langTo:'切换到 English',
     fontLabel:'🔤 字体大小', fontCur:'当前倍数：', fontApply:'应用', fontReset:'恢复默认',
     fontPS:'小', fontPM:'标准', fontPL:'大', fontPX:'特大', fontPXX:'超大',
     fontRangeTip:'拖动滑块 / 点 A＋A− / 输入数值，范围 0.3 - 4.0，立即生效',
     voiceLabel:'🔊 语音播报', voiceOnState:'已开启', voiceOffState:'已关闭',
-    voiceSub:'开启后自动朗读助手的回复', voiceSpeedLabel:'播报速度',
-    voicePreview:'🔊 试听效果', voicePreviewText:'您好，这是当前语速的播报效果。',
-    voiceTip:'五档速度点击即生效并自动保存，试听可体验当前速度',
+    voiceSub:'开启后自动朗读助手的回复',
+    voiceGenderLabel:'播报声音', voiceGenderAuto:'跟随系统', voiceGenderFemale:'女声', voiceGenderMale:'男声',
+    voiceSpeedLabel:'播报速度',
+    voicePreview:'🔊 试听效果', voicePreviewText:'您好，我是脑卒中智能问答助手，卒中又称中风，需要注意血压、供血与康复训练。',
+    voiceTip:'声音与速度点击即生效并自动保存，试听可体验当前效果（已内置卒中等多音字发音修正）',
     recordLabel:'📁 记录保存', exportPdf:'📄 导出聊天记录PDF', saveAudio:'💾 保存为音频',
     stopAudioSave:'🔴 录制中，点击停止', audioProcessing:'⏳ 正在转换音频...',
     audioMsgLabel:'选择要保存的AI回答', noMsgOption:'（暂无可保存的回答）',
@@ -375,7 +377,7 @@ zh:{
     send:'发送', clear:'清空', micTitle:'语音输入（说完自动发送）', closeTip:'关闭',
     welcome:'你好！我是脑卒中智能问答助手，可咨询预防、康复、养护、心理支持等问题~\n💡 点击回答下方的 🔊 可播放语音；点击任意头像可更换头像。',
     thinking:'🤔 思考中...', netErr:'抱歉，网络错误，请稍后再试。',
-    sideDoctor:'福医卒中通助手', sidePatient:'咨询患者',
+    sideDoctor:'福医卒中通', sidePatient:'咨询患者',
     avTitle:'🎨 头像设置',
     avTip:'点击侧边栏或聊天中的头像均可打开此窗口<br>自定义头像仅保存在本机浏览器，支持 jpg / png / webp 等格式',
     avDoctor:'⛑️ 助手头像（医生）', avPatient:'♿ 患者头像（我）',
@@ -384,16 +386,18 @@ zh:{
     questions:['高血压怎么预防中风？','中风后吃什么好？','家人中风后怎么照顾？','怎么判断是不是中风？','中风后手脚没力气怎么办？','中风后情绪低落怎么办？','中风康复训练有哪些？','颈动脉斑块需要治疗吗？','中风后可以运动吗？','怎么帮家人做心理疏导？']
 },
 en:{
-    mainTitle:'Fuyi Stroke Assistant · Intelligent Stroke Q&A', chatTitle:'Intelligent Stroke Consultation',
+    mainTitle:'Fuyi Stroke Assistant · Intelligent Stroke Q&A',
     setBtn:'Settings', setTitle:'⚙️ Settings',
     langLabel:'🌐 Language', langNow:'Current: English', langTo:'切换到中文',
     fontLabel:'🔤 Font Size', fontCur:'Current scale: ', fontApply:'Apply', fontReset:'Reset',
     fontPS:'S', fontPM:'Normal', fontPL:'Large', fontPX:'XL', fontPXX:'XXL',
     fontRangeTip:'Drag slider / tap A＋A− / type a value (0.3 - 4.0), applies instantly',
     voiceLabel:'🔊 Voice Broadcast', voiceOnState:'Enabled', voiceOffState:'Disabled',
-    voiceSub:'Reads assistant replies aloud automatically', voiceSpeedLabel:'Speech Rate',
-    voicePreview:'🔊 Preview', voicePreviewText:'Hello, this is how the current speech rate sounds.',
-    voiceTip:'Tap a rate to apply & save instantly. Use preview to test',
+    voiceSub:'Reads assistant replies aloud automatically',
+    voiceGenderLabel:'Voice Type', voiceGenderAuto:'System Default', voiceGenderFemale:'Female', voiceGenderMale:'Male',
+    voiceSpeedLabel:'Speech Rate',
+    voicePreview:'🔊 Preview', voicePreviewText:'Hello, I am the stroke Q&A assistant. A stroke is also called a brain attack; watch your blood pressure and rehabilitation.',
+    voiceTip:'Voice & rate apply and save instantly. Built-in medical pronunciation fixes included',
     recordLabel:'📁 Save Records', exportPdf:'📄 Export Chat PDF', saveAudio:'💾 Save as Audio',
     stopAudioSave:'🔴 Recording... tap to stop', audioProcessing:'⏳ Converting...',
     audioMsgLabel:'Choose the AI reply to save', noMsgOption:'(No reply to save yet)',
@@ -425,7 +429,7 @@ en:{
     send:'Send', clear:'Clear', micTitle:'Voice input (auto-sends when done)', closeTip:'Close',
     welcome:"Hello! I'm your stroke assistant. Ask about prevention, rehab, daily care or emotional support~\n💡 Tap the 🔊 under a reply to hear it; click any avatar to change it.",
     thinking:'🤔 Thinking...', netErr:'Sorry, network error. Please try again later.',
-    sideDoctor:'Stroke Assistant', sidePatient:'Patient (Me)',
+    sideDoctor:'Fuyi Stroke', sidePatient:'Patient (Me)',
     avTitle:'🎨 Avatar Settings',
     avTip:'Click any avatar (sidebar or in chat) to open this panel<br>Custom avatars are saved in this browser only · jpg / png / webp',
     avDoctor:'⛑️ Assistant Avatar (Doctor)', avPatient:'♿ My Avatar (Patient)',
@@ -454,14 +458,46 @@ function applyLang(){
     for (let i = 1; i <= 10; i++) { const b = getEl('quick' + i); if (b && qs[i-1]) b.textContent = qs[i-1]; }
 }
 
-/* ================= 页内 Toast（替代被浏览器拦截的 alert） ================= */
+/* ================= 🎈 背景悬浮祝福语 / 表情包（切换语言时同步重建） ================= */
+const DECOR_EMOJI = ['😊','🌸','💪','💙','🌈','✨','🍀','🎈','☀️','🧡','🕊️','🌷','👍','😄'];
+const DECOR_WORDS = {
+    zh: ['早日康复','健康常伴','笑口常开','平安喜乐','活力满满','加油','万事顺意','每天好心情','心想事成','好梦'],
+    en: ['Get Well Soon','Stay Strong','Be Happy','Good Vibes','Best Wishes','Keep Going','Sweet Dreams','All the Best','Smile Every Day','Full of Energy']
+};
+function buildFloatDecor(){
+    const old = getEl('floatDecor'); if (old) old.remove();
+    const wrap = document.createElement('div');
+    wrap.id = 'floatDecor'; wrap.className = 'float-decor';
+    const words = DECOR_WORDS[lang] || DECOR_WORDS.zh;
+    const isMobile = window.innerWidth <= 768;
+    const emojiCount = isMobile ? 6 : 8;
+    const wordCount  = isMobile ? 4 : 6;
+    const items = [];
+    for (let i = 0; i < emojiCount; i++) items.push({ t: DECOR_EMOJI[(Math.random() * DECOR_EMOJI.length) | 0], isEmoji: true });
+    for (let i = 0; i < wordCount;  i++) items.push({ t: words[(Math.random() * words.length) | 0],        isEmoji: false });
+    items.forEach(it => {
+        const el = document.createElement('div');
+        el.className = 'fd-item' + (it.isEmoji ? '' : ' fd-word');
+        el.textContent = it.t;
+        const size = it.isEmoji ? 18 + Math.random() * 22 : 13 + Math.random() * 9;
+        el.style.left = (Math.random() * 92 + 2) + '%';
+        el.style.fontSize = size.toFixed(1) + 'px';
+        el.style.setProperty('--fd-op', (0.14 + Math.random() * 0.14).toFixed(2));
+        el.style.setProperty('--fd-sway', (Math.random() * 60 - 30).toFixed(0) + 'px');
+        el.style.animationDuration = (16 + Math.random() * 22).toFixed(1) + 's';
+        el.style.animationDelay = (-Math.random() * 30).toFixed(1) + 's';
+        wrap.appendChild(el);
+    });
+    document.body.appendChild(wrap);
+}
+
+/* ================= 页内 Toast / 确认弹窗 ================= */
 function toast(msg, dur){
     const wrap = getEl('toastWrap'); if (!wrap || !msg) return;
     const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
     wrap.appendChild(t);
     setTimeout(() => { t.style.transition = 'opacity .3s'; t.style.opacity = '0'; setTimeout(() => t.remove(), 320); }, dur || 3200);
 }
-/* 页内确认弹窗（替代 confirm，不受浏览器弹窗拦截影响） */
 function customConfirm(text){
     return new Promise(resolve => {
         const mask = getEl('confirmMask');
@@ -488,7 +524,7 @@ function getEl(id){ return document.getElementById(id); }
 function openSettings(){ getEl('settingsModalMask')?.classList.add('show'); applyFontScale(fontScale); updateVoiceUI(); refreshAudioMsgList(); }
 function closeSettings(){ getEl('settingsModalMask')?.classList.remove('show'); }
 
-/* ===== 字体大小（不变） ===== */
+/* ===== 字体大小 ===== */
 const FONT_MIN = 0.3, FONT_MAX = 4;
 let fontScale = Math.min(FONT_MAX, Math.max(FONT_MIN, parseFloat(safeGet('fyyzt_font_scale', '1')) || 1));
 function applyFontScale(v){
@@ -504,16 +540,89 @@ function applyFontScale(v){
     safeSet('fyyzt_font_scale', String(fontScale));
 }
 
-/* ===== 🔊 语音播报（设置区功能不变） ===== */
+/* ================================================================
+   🔊 语音播报核心：语音列表加载 + 男/女声匹配 + 多音字发音词典
+   ================================================================ */
+let allVoices = [], voicesReady = false;
+function loadVoices(){
+    if (!synth) return;
+    const v = synth.getVoices() || [];
+    if (v.length) { allVoices = v; voicesReady = true; }
+}
+if (synth) {
+    loadVoices();
+    if (typeof synth.onvoiceschanged !== 'undefined') synth.onvoiceschanged = loadVoices;
+    synth.addEventListener?.('voiceschanged', loadVoices);
+    let tries = 0;
+    const retryTimer = setInterval(() => {
+        if (voicesReady || tries++ > 12) { clearInterval(retryTimer); return; }
+        loadVoices();
+    }, 250);
+}
+const MALE_HINTS = [
+    'kangkang','康康','yunyang','云扬','yunxi','云希','yunjian','云健','yunye','云野','yunxia','云夏',
+    'zhiwei','志威','danny','limu','力牧','li-mu',
+    'david','mark','guy','james','alex','daniel','richard','sean','ravi','george','arthur',
+    'male','男'
+];
+const FEMALE_HINTS = [
+    'huihui','慧慧','yaoyao','瑶瑶','xiaoxiao','晓晓','xiaoyi','晓伊','xiaohan','晓涵','xiaoxuan','晓萱','xiaochen','晓澄',
+    'yating','雅婷','hanhan','涵涵','hoda','heera','kalpana',
+    'tingting','婷婷','ting-ting','meijia','美佳','mei-jia','sinji','善怡','sin-ji','wanlung',
+    'tracy','zira','susan','jenny','aria','michelle','samantha','victoria','catherine','hazel','linda','kate','serena','tessa','fiona','monica','ava','allison','nicky',
+    'female','女'
+];
+function pickVoice(gender, langCode){
+    if (!allVoices.length) return null;
+    const prefix = (langCode || 'zh-CN').slice(0, 2).toLowerCase();
+    let pool = allVoices.filter(v => v.lang && String(v.lang).toLowerCase().replace('_','-').startsWith(prefix));
+    if (!pool.length) pool = allVoices.filter(v => /^zh/i.test(String(v.lang || '')));
+    if (!pool.length) pool = allVoices;
+    if (gender === 'male' || gender === 'female') {
+        const hints = gender === 'male' ? MALE_HINTS : FEMALE_HINTS;
+        let hit = pool.find(v => { const n = String(v.name || '').toLowerCase(); return hints.some(h => n.includes(h)); });
+        if (hit) return hit;
+        hit = pool.find(v => { const u = String(v.voiceURI || v.voice_id || '').toLowerCase(); return hints.some(h => u.includes(h)); });
+        if (hit) return hit;
+        return null;
+    }
+    return pool.find(v => v.default) || pool.find(v => v.localService) || pool[0] || null;
+}
+const PRON_DICT = {
+    '脑卒中': '脑促众',
+    '卒中':   '促众',
+    '供血':   '功血',
+    '供氧':   '功氧',
+    '冠心病':   '官心病',
+    '冠状动脉': '官状动脉',
+    '荨麻疹': '寻麻疹',
+    '脂肪':   '知房'
+};
+function applyPronunciation(text){
+    let t = String(text || '');
+    const keys = Object.keys(PRON_DICT).sort((a, b) => b.length - a.length);
+    for (const k of keys) { if (t.includes(k)) t = t.split(k).join(PRON_DICT[k]); }
+    return t;
+}
 const VOICE_RATES = [0.5, 0.75, 1, 1.5, 2];
+const GENDERS = ['auto', 'female', 'male'];
 let voiceEnabled = safeGet('fyyzt_voice_enabled', '1') !== '0';
 let voiceRate = 1;
 (function(){ const r = parseFloat(safeGet('fyyzt_voice_rate', '1')); voiceRate = VOICE_RATES.includes(r) ? r : 1; })();
+let voiceGender = safeGet('fyyzt_voice_gender', 'auto');
+if (!GENDERS.includes(voiceGender)) voiceGender = 'auto';
+
 function updateVoiceUI(){
     const t = getEl('voiceToggle');
     if (t) { t.classList.toggle('on', voiceEnabled); t.setAttribute('aria-checked', voiceEnabled ? 'true' : 'false'); }
     const st = getEl('voiceStateTxt');
     if (st) st.textContent = voiceEnabled ? tr('voiceOnState') : tr('voiceOffState');
+    document.querySelectorAll('.preset-btn[data-rate]').forEach(b => {
+        b.classList.toggle('active', Math.abs(parseFloat(b.dataset.rate) - voiceRate) < 0.001);
+    });
+    document.querySelectorAll('.preset-btn[data-gender]').forEach(b => {
+        b.classList.toggle('active', b.dataset.gender === voiceGender);
+    });
 }
 function setVoiceEnabled(v){ voiceEnabled = v; safeSet('fyyzt_voice_enabled', v ? '1' : '0'); updateVoiceUI(); }
 function toggleVoice(){
@@ -523,23 +632,12 @@ function toggleVoice(){
 }
 function setVoiceRate(r){
     if (!VOICE_RATES.includes(r)) r = 1;
-    voiceRate = r;
-    safeSet('fyyzt_voice_rate', String(r));
-    document.querySelectorAll('.preset-btn[data-rate]').forEach(b => {
-        b.classList.toggle('active', Math.abs(parseFloat(b.dataset.rate) - voiceRate) < 0.001);
-    });
+    voiceRate = r; safeSet('fyyzt_voice_rate', String(r)); updateVoiceUI();
 }
-function previewVoice(){
-    if (!synth) { toast(tr('voiceUnsupported')); return; }
-    try {
-        synth.cancel();
-        const u = new SpeechSynthesisUtterance(tr('voicePreviewText'));
-        u.lang = lang === 'zh' ? 'zh-CN' : 'en-US'; u.rate = voiceRate;
-        synth.speak(u);
-    } catch(e) { console.error(e); }
+function setVoiceGender(g){
+    if (!GENDERS.includes(g)) g = 'auto';
+    voiceGender = g; safeSet('fyyzt_voice_gender', g); updateVoiceUI();
 }
-
-/* ===== TTS 核心：解锁 + 分句播报（修复自动播放失效） ===== */
 let ttsUnlocked = false;
 function unlockTTS(){
     if (ttsUnlocked || !synth) return; ttsUnlocked = true;
@@ -569,22 +667,24 @@ function speakText(text, msgEl){
     if (!synth || !text) return;
     stopSpeaking();
     const session = speakSession;
-    const chunks = splitChunks(text);
+    const langCode = lang === 'zh' ? 'zh-CN' : 'en-US';
+    const voice = pickVoice(voiceGender, langCode);
+    const chunks = splitChunks(applyPronunciation(text));
     let i = 0;
     const next = () => {
         if (session !== speakSession) return;
         if (i >= chunks.length) { resetSpeakIcons(); return; }
         let u;
         try { u = new SpeechSynthesisUtterance(chunks[i++]); } catch(e) { resetSpeakIcons(); return; }
-        u.lang = lang === 'zh' ? 'zh-CN' : 'en-US'; u.rate = voiceRate;
+        if (voice) { u.voice = voice; u.lang = voice.lang; } else { u.lang = langCode; }
+        u.rate = voiceRate;
         u.onend = () => { if (session === speakSession) next(); };
         u.onerror = () => { if (session === speakSession) resetSpeakIcons(); };
         try { synth.speak(u); } catch(e) { resetSpeakIcons(); }
     };
     if (msgEl) { speakingMsg = msgEl; markSpeaking(msgEl, true); }
-    setTimeout(next, 90); // cancel 后稍作延迟，避免 utterance 被丢弃
+    setTimeout(next, 90);
 }
-/* 🔊 喇叭快捷键：播放本条 / 停止并联动开关 */
 function toggleSpeakMessage(btn, text){
     if (!synth) { toast(tr('voiceUnsupported')); return; }
     if (audioBusy) { toast(tr('audioRecordingNow')); return; }
@@ -593,6 +693,16 @@ function toggleSpeakMessage(btn, text){
     setVoiceEnabled(true);
     speakText(text, btn.closest('.message'));
     toast(tr('voicePlaying'));
+}
+function previewVoice(){
+    if (!synth) { toast(tr('voiceUnsupported')); return; }
+    stopSpeaking();
+    const langCode = lang === 'zh' ? 'zh-CN' : 'en-US';
+    const voice = pickVoice(voiceGender, langCode);
+    const u = new SpeechSynthesisUtterance(applyPronunciation(tr('voicePreviewText')));
+    if (voice) { u.voice = voice; u.lang = voice.lang; } else { u.lang = langCode; }
+    u.rate = voiceRate;
+    try { synth.speak(u); } catch(e) { console.error(e); }
 }
 
 /* ===== 语言切换 ===== */
@@ -603,10 +713,10 @@ async function switchLang(){
     await fetch('/api/switch_lang', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ lang }) }).catch(e => console.log(e));
     if (recognition) recognition.lang = lang === 'zh' ? 'zh-CN' : 'en-US';
     stopSpeaking();
-    applyLang(); clearChat(); switchingLang = false;
+    applyLang(); buildFloatDecor(); clearChat(); switchingLang = false;
 }
 
-/* ================= 头像系统（不变） ================= */
+/* ================= 头像系统 ================= */
 const DEFAULT_AV = {
     doctor:  { emoji:'⛑️', bg:'linear-gradient(135deg,#E6F7FF 0%,#B7E2FF 100%)' },
     patient: { emoji:'♿',  bg:'linear-gradient(135deg,#EAFBF1 0%,#C2EDD4 100%)' }
@@ -705,7 +815,7 @@ function bindAvatarControls(role){
     });
 }
 
-/* ===== 语音输入（细化错误提示 + 临时结果上屏 + 完成自动发送） ===== */
+/* ===== 语音输入 ===== */
 function initRecognition(){
     const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!Rec) { toast(tr('micUnsupported')); return false; }
@@ -751,7 +861,7 @@ function getAssistantMessages(){
         .map(el => el.innerText.trim()).filter(t => t);
 }
 
-/* ================= 📁 记录保存：工具函数 ================= */
+/* ================= 📁 记录保存 ================= */
 function dateStr(){
     const d = new Date(), p = n => String(n).padStart(2, '0');
     return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`;
@@ -904,7 +1014,6 @@ async function exportChatPDF(){
         pdfBusy = false; btn.disabled = false; btn.textContent = tr('exportPdf');
     }
 }
-/* ===== 音频录制保存（修复卡死：所有异常路径复位状态 + onerror 兜底） ===== */
 function refreshAudioMsgList(){
     const sel = getEl('audioMsgSelect'); if (!sel) return;
     const msgs = getAssistantMessages();
@@ -968,7 +1077,6 @@ async function blobToWav(blob){
 }
 let audioBusy = false, currentRecorder = null, currentStream = null, currentChunks = [];
 async function saveVoiceAudio(){
-    // 录制中再次点击 → 提前结束
     if (audioBusy && currentRecorder && currentRecorder.state === 'recording') {
         try { synth && synth.cancel(); } catch(e){}
         setAudioBtn(tr('audioProcessing'), true);
@@ -984,7 +1092,7 @@ async function saveVoiceAudio(){
     const text = msgs[idx];
     if (!synth) { toast(tr('voiceUnsupported')); return; }
     if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia || !window.MediaRecorder) { toast(tr('audioUnsupported'), 5000); return; }
-    const ok = await customConfirm(tr('audioHint')); // 页内确认，不会被浏览器拦截
+    const ok = await customConfirm(tr('audioHint'));
     if (!ok) return;
     audioBusy = true; currentChunks = [];
     let stream;
@@ -996,7 +1104,7 @@ async function saveVoiceAudio(){
         });
     } catch(err) {
         audioBusy = false; currentChunks = [];
-        if (err && err.name !== 'NotAllowedError') toast(tr('audioRecordFail')); // 用户主动取消则静默
+        if (err && err.name !== 'NotAllowedError') toast(tr('audioRecordFail'));
         return;
     }
     const audioTracks = stream.getAudioTracks();
@@ -1014,7 +1122,7 @@ async function saveVoiceAudio(){
         currentStream = null; audioBusy = false; toast(tr('audioRecordFail')); return;
     }
     currentRecorder.ondataavailable = e => { if (e.data && e.data.size) currentChunks.push(e.data); };
-    currentRecorder.onerror = () => { // 新增：录制器出错兜底，避免按钮卡死
+    currentRecorder.onerror = () => {
         toast(tr('audioRecordFail'));
         try { currentRecorder && currentRecorder.state !== 'inactive' && currentRecorder.stop(); } catch(e){}
     };
@@ -1044,8 +1152,11 @@ async function saveVoiceAudio(){
     };
     try {
         synth.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = lang === 'zh' ? 'zh-CN' : 'en-US'; u.rate = voiceRate;
+        const langCode = lang === 'zh' ? 'zh-CN' : 'en-US';
+        const voice = pickVoice(voiceGender, langCode);
+        const u = new SpeechSynthesisUtterance(applyPronunciation(text));
+        if (voice) { u.voice = voice; u.lang = voice.lang; } else { u.lang = langCode; }
+        u.rate = voiceRate;
         u.onstart = () => { started = true; };
         u.onend = finish; u.onerror = finish;
         setTimeout(() => { try { synth.speak(u); } catch(e) { finish(); } }, 300);
@@ -1055,7 +1166,7 @@ async function saveVoiceAudio(){
     } catch(err) { finish(); }
 }
 
-/* ===== 消息（助手消息带 🔊 喇叭） ===== */
+/* ===== 消息 ===== */
 function assistantMsgHTML(text){
     const cleaned = String(text).replace(/\*\*/g, '');
     return `<div class="msg-avatar" title="${tr('avClickChange')}">${getAvatarHTML('doctor')}</div>` +
@@ -1118,7 +1229,7 @@ async function send(){
             parts.forEach(handleLine);
         }
         if (buffer) handleLine(buffer);
-        if (voiceEnabled && full) speakText(full, div); // 自动播报（带喇叭动画）
+        if (voiceEnabled && full) speakText(full, div);
     } catch(err) {
         if (loading && loading.parentNode) loading.remove();
         if (!full) addMsg('assistant', tr('netErr'));
@@ -1139,7 +1250,6 @@ document.addEventListener('DOMContentLoaded', function(){
         if (e.key === 'Enter') { e.preventDefault(); send(); }
     });
 
-    // ===== ⚙ 设置功能（不变） =====
     getEl('setBtn')?.addEventListener('click', openSettings);
     getEl('settingsClose')?.addEventListener('click', closeSettings);
     getEl('settingsModalMask')?.addEventListener('click', e => { if (e.target === getEl('settingsModalMask')) closeSettings(); });
@@ -1161,11 +1271,13 @@ document.addEventListener('DOMContentLoaded', function(){
     document.querySelectorAll('.preset-btn[data-rate]').forEach(b => {
         b.addEventListener('click', () => setVoiceRate(parseFloat(b.dataset.rate)));
     });
+    document.querySelectorAll('.preset-btn[data-gender]').forEach(b => {
+        b.addEventListener('click', () => setVoiceGender(b.dataset.gender));
+    });
     getEl('voicePreviewBtn')?.addEventListener('click', previewVoice);
     getEl('exportPdfBtn')?.addEventListener('click', exportChatPDF);
     getEl('saveAudioBtn')?.addEventListener('click', saveVoiceAudio);
 
-    // ===== 头像 + 🔊 喇叭（事件委托，流式消息也能响应） =====
     bindAvatarControls('doctor'); bindAvatarControls('patient');
     getEl('doctorAvatarClick')?.addEventListener('click', openAvatarModal);
     getEl('patientAvatarClick')?.addEventListener('click', openAvatarModal);
@@ -1181,7 +1293,6 @@ document.addEventListener('DOMContentLoaded', function(){
         }
     });
 
-    // Esc 关闭所有弹窗
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
             closeSettings(); closeAvatarModal();
@@ -1190,14 +1301,14 @@ document.addEventListener('DOMContentLoaded', function(){
         }
     });
 
-    // 首次点击解锁 TTS 引擎（修复自动播报失效的关键之一）
     document.addEventListener('click', unlockTTS, { once: true });
 
-    // 初始化
     applyFontScale(fontScale);
     setVoiceRate(voiceRate);
+    setVoiceGender(voiceGender);
     updateVoiceUI();
     refreshAvatars();
+    buildFloatDecor();
     clearChat();
 });
 </script>
