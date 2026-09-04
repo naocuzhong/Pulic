@@ -401,6 +401,8 @@
 	    micPermission:'麦克风权限被拒绝：请点击地址栏左侧图标，允许"麦克风"后重试',
 	    /* ★移动端修复8：手机端专属权限提示 + 内嵌浏览器引导 */
 	    micPermissionMobile:'麦克风权限被拒绝：手机端请在浏览器「设置 → 网站设置 → 麦克风」中设为允许后，刷新页面重试',
+		micNetworkMobile:'语音识别连接失败：手机浏览器的语音识别依赖谷歌在线服务，部分手机或网络环境无法使用，请改用打字输入',
+	    micServiceBlocked:'语音服务被限制：手机端语音识别依赖谷歌在线服务，无谷歌服务的手机或部分网络环境无法使用，请改用打字输入',
 	    micInApp:'微信/QQ内嵌浏览器无法使用麦克风：请点右上角「…」→「在浏览器打开」，用系统浏览器访问后再试',
 	    micNetwork:'语音识别服务连接失败，请检查网络后重试（需联网）',
 	    micNoSpeech:'没有检测到语音，请靠近麦克风再试一次',
@@ -456,6 +458,8 @@
 	    micPermission:'Microphone permission denied. Allow mic access in the address bar and retry',
 	    /* ★移动端修复8：手机端专属权限提示 + 内嵌浏览器引导 */
 	    micPermissionMobile:'Microphone blocked on mobile: open browser Settings → Site settings → Microphone → Allow, then reload this page',
+		micNetworkMobile:'Speech service unreachable: mobile speech recognition relies on Google online services, which may be unavailable on some devices/networks. Please type instead',
+	    micServiceBlocked:'Speech service blocked: mobile recognition relies on Google services. Unavailable on devices without them. Please type instead',
 	    micInApp:'Voice input is unavailable inside WeChat/QQ. Tap "…" (top-right) → "Open in browser" and retry',
 	    micNetwork:'Speech service unreachable. Check your network and retry',
 	    micNoSpeech:'No speech detected. Please move closer to the mic and try again',
@@ -846,7 +850,40 @@
 	        refreshAvatars(); renderAvatarModal();
 	    });
 	}
-	/* ===== 语音输入 ===== */
+		/* ===== 语音输入（★二次修复：设置中已"允许"仍报"权限被拒绝"） ===== */
+	let micAutoRetried = false, micBusy = false;
+	/* 麦克风预热——本次修复的核心：
+	   Chrome/Android 缺陷：在「设置→网站设置→麦克风」中手动设为"允许"后，
+	   webkitSpeechRecognition 依然报 not-allowed（它只认页面内弹窗授权）。
+	   解法：先用 getUserMedia 真正激活一次麦克风——
+	   ① 权限已是"允许" → 不弹窗、瞬间完成（即你截图2的当前状态）
+	   ② 权限是"询问"   → 弹出浏览器原生授权框（比语音识别自带的更可靠）
+	   ③ 权限是"禁止"   → 立即失败，给出准确引导
+	   完成后马上释放采流，不产生任何录音。 */
+	async function warmUpMic(){
+	    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return 'unsupported';
+	    try {
+	        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+	        stream.getTracks().forEach(t => t.stop());
+	        return 'ok';
+	    } catch(err){
+	        const n = err && err.name;
+	        if (n === 'NotAllowedError' || n === 'SecurityError' || n === 'PermissionDeniedError') return 'denied';
+	        if (n === 'NotFoundError' || n === 'NotReadableError') return 'nodevice';
+	        return 'fail';
+	    }
+	}
+	function micDeniedToast(){
+	    toast(tr(isMobileDevice() ? 'micPermissionMobile' : 'micPermission'), 6000);
+	}
+	/* 置为录音状态并启动识别 */
+	function startRecUI(){
+	    recGotResult = false;
+	    isRecording = true;
+	    getEl('micBtn')?.classList.add('recording');
+	    try { recognition.start(); }
+	    catch(e){ stopRec(); toast(tr('micFail')); }
+	}
 	function initRecognition(){
 	    const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
 	    if (!Rec) { toast(tr('micUnsupported')); return false; }
@@ -860,11 +897,21 @@
 	        const inp = getEl('input'); if (inp) inp.value = txt;
 	    };
 	    recognition.onerror = e => {
-	        stopRec();
 	        const c = e && e.error;
-	        /* ★移动端修复9：权限被拒时，手机端显示手机适用的引导文案 */
-	        if (c === 'not-allowed' || c === 'service-not-allowed') toast(tr(isMobileDevice() ? 'micPermissionMobile' : 'micPermission'), 6000);
-	        else if (c === 'network') toast(tr('micNetwork'), 5000);
+	        stopRec();
+	        /* ★误报兜底：权限其实已允许却报 not-allowed → 预热后自动重试一次 */
+	        if ((c === 'not-allowed' || c === 'service-not-allowed') && !micAutoRetried) {
+	            micAutoRetried = true;
+	            warmUpMic().then(w => {
+	                if (w === 'ok') setTimeout(startRecUI, 250);
+	                else if (w === 'nodevice') toast(tr('micNoDevice'));
+	                else micDeniedToast();
+	            });
+	            return;
+	        }
+	        if (c === 'service-not-allowed') toast(tr('micServiceBlocked'), 6000);
+	        else if (c === 'not-allowed') micDeniedToast();
+	        else if (c === 'network') toast(tr(isMobileDevice() ? 'micNetworkMobile' : 'micNetwork'), 6000);
 	        else if (c === 'no-speech') toast(tr('micNoSpeech'));
 	        else if (c === 'audio-capture') toast(tr('micNoDevice'));
 	        else toast(tr('micFail'));
@@ -876,14 +923,23 @@
 	    };
 	    return true;
 	}
-	function toggleRec(){
-	    /* ★移动端修复10：微信/QQ内嵌浏览器无法授权麦克风，提前给出引导 */
+	async function toggleRec(){
 	    if (/MicroMessenger|QQ\//i.test(navigator.userAgent)) { toast(tr('micInApp'), 6000); return; }
+	    if (micBusy) return;                       /* 预热进行中，忽略重复点击 */
+	    if (isRecording) { stopRec(); return; }    /* 录音中再次点击 = 主动停止 */
 	    if (!recognition && !initRecognition()) return;
-	    isRecording = !isRecording;
-	    getEl('micBtn')?.classList.toggle('recording', isRecording);
-	    if (isRecording) { recGotResult = false; try { recognition.start(); } catch(e) { stopRec(); toast(tr('micFail')); } }
-	    else { recGotResult = false; try { recognition.stop(); } catch(e){} }
+	    micBusy = true;
+	    try {
+	        /* ★关键：先激活麦克风权限，再启动语音识别 */
+	        const w = await warmUpMic();
+	        if (w === 'denied')   { micDeniedToast(); return; }          /* 权限确实是"禁止" */
+	        if (w === 'nodevice') { toast(tr('micNoDevice')); return; }  /* 无麦克风设备 */
+	        /* ok / unsupported / fail → 继续尝试识别，由识别自身报错兜底 */
+	        micAutoRetried = false;
+	        setTimeout(startRecUI, 120);   /* 留出麦克风释放时间 */
+	    } finally {
+	        micBusy = false;
+	    }
 	}
 	function stopRec(){
 	    isRecording = false;
