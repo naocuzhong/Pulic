@@ -8,7 +8,6 @@ from openai import OpenAI, APIError, APITimeoutError, APIConnectionError
 import httpx
 
 app = Flask(__name__)
-# 设置日志级别为 DEBUG，以便在控制台看到详细错误
 logging.basicConfig(level=logging.DEBUG)
 
 DASHSCOPE_API_KEY = os.environ.get("DASHSCOPE_API_KEY")
@@ -16,7 +15,6 @@ if not DASHSCOPE_API_KEY:
     app.logger.warning("未设置环境变量 DASHSCOPE_API_KEY")
 
 DASHSCOPE_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-# 使用标准模型，避免私有实例失效
 MODEL_NAME = "qwen3.5-27b-558634c99d67"  # 或 "qwen-plus"
 
 http_client = httpx.Client(
@@ -76,7 +74,7 @@ def generate_stream(question):
     )
 
     if not client:
-        app.logger.error("OpenAI 客户端未初始化，请检查 DASHSCOPE_API_KEY 环境变量")
+        app.logger.error("OpenAI 客户端未初始化，请检查 DASHSCOPE_API_KEY")
         yield "系统配置错误，请联系管理员。"
         return
 
