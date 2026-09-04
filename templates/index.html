@@ -17,7 +17,6 @@
         .header-btn:hover{background:rgba(255,255,255,0.35)}
         .gear-ico{font-size:min(calc(30px * var(--font-scale)),32px);vertical-align:-2px;margin-right:4px;display:inline-block;transition:transform .5s}
         #setBtn:hover .gear-ico{transform:rotate(120deg)}
-        /* ===== 🎈 背景悬浮祝福语 / 表情包（半透明、不遮挡、不响应点击） ===== */
         .float-decor{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
         .fd-item{position:absolute;bottom:-70px;opacity:0;will-change:transform,opacity;user-select:none;pointer-events:none;animation:fdFloat linear infinite;line-height:1.4}
         .fd-word{font-weight:600;color:#0a86d8;letter-spacing:2px}
@@ -42,9 +41,11 @@
         .avatar-card{text-align:center;margin-bottom:40px}
         .avatar-card h3{font-size:min(calc(28px * var(--font-scale)),36px);color:#333;font-weight:600}
         .chat-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-        .quick-questions{padding:12px 16px;background:#f5f9fe;border-bottom:1px solid #e6f0fa;overflow-x:auto;white-space:nowrap;display:flex;gap:10px}
-        .quick-questions button{background:#eef3fc;border:1px solid #cce4f5;border-radius:24px;padding:8px 16px;font-size:min(calc(24px * var(--font-scale)),32px);color:#0077cc;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all 0.2s}
+        .quick-questions{padding:12px 16px;background:#f5f9fe;border-bottom:1px solid #e6f0fa;overflow-x:auto;white-space:nowrap;display:flex;gap:10px;scrollbar-width:none;-ms-overflow-style:none}
+        .quick-questions::-webkit-scrollbar{display:none}
+        .quick-questions button{background:#eef3fc;border:1px solid #cce4f5;border-radius:24px;padding:8px 16px;font-size:min(calc(24px * var(--font-scale)),32px);color:#0077cc;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all 0.2s;font-family:inherit}
         .quick-questions button:hover{background:#0077cc;color:#fff;border-color:#0077cc}
+        .quick-questions button:active{transform:scale(0.96)}
         .chat-body{flex:1;padding:20px;overflow-y:auto;background:#fafbfc;overscroll-behavior:contain}
         .message{display:flex;gap:10px;margin-bottom:14px;max-width:75%}
         .message.user{margin-left:auto;flex-direction:row-reverse}
@@ -188,7 +189,7 @@
                 </div>
             </div>
             <div class="chat-main">
-                <div class="quick-questions">
+                <div class="quick-questions" id="quickRow">
                     <button id="quick1"></button><button id="quick2"></button><button id="quick3"></button><button id="quick4"></button><button id="quick5"></button><button id="quick6"></button><button id="quick7"></button><button id="quick8"></button><button id="quick9"></button><button id="quick10"></button>
                 </div>
                 <div class="chat-body" id="chatBody"></div>
@@ -458,7 +459,7 @@ function applyLang(){
     for (let i = 1; i <= 10; i++) { const b = getEl('quick' + i); if (b && qs[i-1]) b.textContent = qs[i-1]; }
 }
 
-/* ================= 🎈 背景悬浮祝福语 / 表情包（切换语言时同步重建） ================= */
+/* ================= 🎈 背景悬浮祝福语 / 表情包 ================= */
 const DECOR_EMOJI = ['😊','🌸','💪','💙','🌈','✨','🍀','🎈','☀️','🧡','🕊️','🌷','👍','😄'];
 const DECOR_WORDS = {
     zh: ['早日康复','健康常伴','笑口常开','平安喜乐','活力满满','加油','万事顺意','每天好心情','心想事成','好梦'],
@@ -541,7 +542,7 @@ function applyFontScale(v){
 }
 
 /* ================================================================
-   🔊 语音播报核心：语音列表加载 + 男/女声匹配 + 多音字发音词典
+   🔊 语音播报核心
    ================================================================ */
 let allVoices = [], voicesReady = false;
 function loadVoices(){
@@ -1249,6 +1250,18 @@ document.addEventListener('DOMContentLoaded', function(){
         if (e.isComposing || e.keyCode === 229) return;
         if (e.key === 'Enter') { e.preventDefault(); send(); }
     });
+
+    // ===== 🔥 修复：绑定快速问答按钮点击事件 =====
+    for (let i = 1; i <= 10; i++) {
+        const btn = getEl('quick' + i);
+        if (btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const text = this.textContent.trim();
+                if (text) quickAsk(text);
+            });
+        }
+    }
 
     getEl('setBtn')?.addEventListener('click', openSettings);
     getEl('settingsClose')?.addEventListener('click', closeSettings);
