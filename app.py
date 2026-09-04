@@ -16,9 +16,9 @@ if not DASHSCOPE_API_KEY:
 DASHSCOPE_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 MODEL_NAME = "qwen3.5-27b-558634c99d67"
 
-# 创建带超时的 HTTP 客户端（全局）
+# 创建带超时的 HTTP 客户端，增加 read_timeout 到 120 秒
 http_client = httpx.Client(
-    timeout=httpx.Timeout(60.0, connect=30.0, read=60.0, write=30.0)
+    timeout=httpx.Timeout(120.0, connect=30.0, read=120.0, write=30.0)
 )
 
 if DASHSCOPE_API_KEY:
@@ -111,7 +111,11 @@ def generate_stream(question):
         return
     except Exception as e:
         app.logger.error(f"流式迭代未知错误: {e}")
-        yield "服务暂时不可用。"
+        # 如果已经有一部分回答，先输出已有的，再追加错误提示
+        if full_answer:
+            yield "\n\n（回答未完整，网络可能中断，请重试）"
+        else:
+            yield "服务暂时不可用。"
         return
 
     if "来源" not in full_answer and "参考" not in full_answer:
