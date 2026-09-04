@@ -17,7 +17,7 @@ if not DASHSCOPE_API_KEY:
 
 DASHSCOPE_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 # 使用标准模型，避免私有实例失效
-MODEL_NAME = "qwen-turbo"  # 或 "qwen-plus"
+MODEL_NAME = "qwen3.5-27b-558634c99d67"  # 或 "qwen-plus"
 
 http_client = httpx.Client(
     timeout=httpx.Timeout(120.0, connect=30.0, read=120.0, write=30.0)
