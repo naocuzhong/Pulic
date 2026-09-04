@@ -5,3 +5,4 @@ gunicorn
 dashscope==1.20.0
 httpx
 gevent
+packaging
