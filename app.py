@@ -4,7 +4,8 @@ import re
 import os
 import json
 import time
-from openai import OpenAI
+from openai import OpenAI, APIError, APITimeoutError, APIConnectionError
+import httpx
 
 app = Flask(__name__)
 
@@ -13,13 +14,21 @@ if not DASHSCOPE_API_KEY:
     print("警告：未设置环境变量 DASHSCOPE_API_KEY")
 
 DASHSCOPE_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+MODEL_NAME = "qwen3.5-27b-558634c99d67"
+
+# 创建带超时的 HTTP 客户端（全局）
+http_client = httpx.Client(
+    timeout=httpx.Timeout(60.0, connect=30.0, read=60.0, write=30.0)
+)
 
 if DASHSCOPE_API_KEY:
-    client = OpenAI(api_key=DASHSCOPE_API_KEY, base_url=DASHSCOPE_BASE_URL)
+    client = OpenAI(
+        api_key=DASHSCOPE_API_KEY,
+        base_url=DASHSCOPE_BASE_URL,
+        http_client=http_client
+    )
 else:
     client = None
-
-MODEL_NAME = "qwen3.5-27b-558634c99d67"
 
 @app.after_request
 def add_headers(response):
@@ -30,7 +39,7 @@ def add_headers(response):
     return response
 
 def generate_stream(question):
-    # 非紧急症状过滤（一次性返回，不再逐字符）
+    # 非紧急症状过滤（一次性返回）
     mild_pattern = re.compile(
         r'(头(?:有?点)?痛|头(?:有?点)?晕|眼花|疲劳|乏力|失眠|焦虑|消化不良|颈部不适|有点不舒服)',
         re.IGNORECASE
@@ -76,12 +85,15 @@ def generate_stream(question):
             temperature=0.3,
             top_p=0.85,
             max_tokens=1024,
-            stream=True,
-            timeout=60.0  # 设置超时，避免长时间卡住
+            stream=True
         )
+    except (APITimeoutError, APIConnectionError, APIError) as e:
+        app.logger.error(f"OpenAI API 调用失败: {e}")
+        yield "抱歉，网络或服务暂时不可用，请稍后再试。"
+        return
     except Exception as e:
-        app.logger.error(f"API调用失败: {e}")
-        yield "抱歉，系统繁忙，请稍后再试。"
+        app.logger.error(f"未知 API 错误: {e}")
+        yield "系统出错，请稍后重试。"
         return
 
     full_answer = ""
@@ -92,17 +104,18 @@ def generate_stream(question):
                 if hasattr(delta, "content") and delta.content:
                     txt = delta.content.replace('**', '')
                     full_answer += txt
-                    # 直接推送文本块，不再 sleep，保证流式速度
                     yield txt
+    except (APITimeoutError, APIConnectionError, APIError) as e:
+        app.logger.error(f"流式迭代 API 错误: {e}")
+        yield "网络中断，请重试。"
+        return
     except Exception as e:
-        app.logger.error(f"流式迭代异常: {e}")
-        yield "服务暂时不可用，请稍后重试。"
+        app.logger.error(f"流式迭代未知错误: {e}")
+        yield "服务暂时不可用。"
         return
 
-    # 如果模型没有带来源，补充温馨提示（不再强制添加来源）
     if "来源" not in full_answer and "参考" not in full_answer:
-        source = "\n\n（温馨提示：以上信息仅供参考，具体诊疗请咨询专业医生。）"
-        yield source
+        yield "\n\n（温馨提示：以上信息仅供参考，具体诊疗请咨询专业医生。）"
 
 @app.route('/api/stream', methods=['POST'])
 def stream():
@@ -110,14 +123,16 @@ def stream():
     q = data.get("question", "")
     if not q:
         return jsonify({"error": "问题为空"}), 400
+
     def gen():
         try:
             for ch in generate_stream(q):
                 yield f"data: {json.dumps({'chunk': ch})}\n\n"
         except Exception as e:
-            app.logger.error(f"Stream generation error: {e}")
+            app.logger.error(f"Stream 生成器异常: {e}")
             yield f"data: {json.dumps({'chunk': '服务暂时不可用，请稍后重试。'})}\n\n"
         yield "data: {\"done\": true}\n\n"
+
     return Response(gen(), mimetype="text/event-stream")
 
 @app.route('/api/switch_lang', methods=['POST', 'OPTIONS'])
@@ -132,6 +147,3 @@ def index():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=False)
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5014, debug=False)
