@@ -30,7 +30,7 @@ def add_headers(response):
     return response
 
 def generate_stream(question):
-    # 非紧急症状过滤（固定回答也逐字输出）
+    # 非紧急症状过滤（一次性返回，不再逐字符）
     mild_pattern = re.compile(
         r'(头(?:有?点)?痛|头(?:有?点)?晕|眼花|疲劳|乏力|失眠|焦虑|消化不良|颈部不适|有点不舒服)',
         re.IGNORECASE
@@ -38,9 +38,7 @@ def generate_stream(question):
     if mild_pattern.search(question):
         fixed = ("头痛的原因很多，比如疲劳、紧张或血压波动。请先坐下休息，喝点温水，观察一下。"
                  "如果疼痛持续不缓解或加重，再咨询医生。注意：本内容仅供参考，如有需要请及时就医。")
-        for ch in fixed:
-            yield ch
-            time.sleep(0.03)
+        yield fixed
         return
 
     system_prompt = (
@@ -78,36 +76,33 @@ def generate_stream(question):
             temperature=0.3,
             top_p=0.85,
             max_tokens=1024,
-            stream=True
+            stream=True,
+            timeout=60.0  # 设置超时，避免长时间卡住
         )
     except Exception as e:
-        print(f"API调用失败: {e}")
-        err_msg = "抱歉，系统繁忙，请稍后再试。"
-        for ch in err_msg:
-            yield ch
-            time.sleep(0.03)
+        app.logger.error(f"API调用失败: {e}")
+        yield "抱歉，系统繁忙，请稍后再试。"
         return
 
     full_answer = ""
-    # 移除模型输出中的 ** 符号
-    for chunk in stream:
-        if chunk.choices and len(chunk.choices) > 0:
-            delta = chunk.choices[0].delta
-            if hasattr(delta, "content") and delta.content:
-                txt = delta.content.replace('**', '')
-                full_answer += txt
-                # 逐字符发送
-                for ch in txt:
-                    yield ch
-                    time.sleep(0.02)
+    try:
+        for chunk in stream:
+            if chunk.choices and len(chunk.choices) > 0:
+                delta = chunk.choices[0].delta
+                if hasattr(delta, "content") and delta.content:
+                    txt = delta.content.replace('**', '')
+                    full_answer += txt
+                    # 直接推送文本块，不再 sleep，保证流式速度
+                    yield txt
+    except Exception as e:
+        app.logger.error(f"流式迭代异常: {e}")
+        yield "服务暂时不可用，请稍后重试。"
+        return
 
-    # 如果模型完全没有带来源，则添加一个温和的提示（不再强制统一来源）
+    # 如果模型没有带来源，补充温馨提示（不再强制添加来源）
     if "来源" not in full_answer and "参考" not in full_answer:
         source = "\n\n（温馨提示：以上信息仅供参考，具体诊疗请咨询专业医生。）"
-        for ch in source:
-            yield ch
-            time.sleep(0.02)
-    # 如果模型已经带了来源，则不再做任何补充，保留模型原有的来源（真实、多样）
+        yield source
 
 @app.route('/api/stream', methods=['POST'])
 def stream():
@@ -116,8 +111,12 @@ def stream():
     if not q:
         return jsonify({"error": "问题为空"}), 400
     def gen():
-        for ch in generate_stream(q):
-            yield f"data: {json.dumps({'chunk': ch})}\n\n"
+        try:
+            for ch in generate_stream(q):
+                yield f"data: {json.dumps({'chunk': ch})}\n\n"
+        except Exception as e:
+            app.logger.error(f"Stream generation error: {e}")
+            yield f"data: {json.dumps({'chunk': '服务暂时不可用，请稍后重试。'})}\n\n"
         yield "data: {\"done\": true}\n\n"
     return Response(gen(), mimetype="text/event-stream")
 
@@ -130,6 +129,9 @@ def switch_lang():
 @app.route('/')
 def index():
     return render_template('index.html')
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=False)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5014, debug=False)
