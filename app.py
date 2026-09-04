@@ -3,20 +3,22 @@ from flask import Flask, request, jsonify, render_template, Response
 import re
 import os
 import json
-import time
+import logging
 from openai import OpenAI, APIError, APITimeoutError, APIConnectionError
 import httpx
 
 app = Flask(__name__)
+# 设置日志级别为 DEBUG，以便在控制台看到详细错误
+logging.basicConfig(level=logging.DEBUG)
 
 DASHSCOPE_API_KEY = os.environ.get("DASHSCOPE_API_KEY")
 if not DASHSCOPE_API_KEY:
-    print("警告：未设置环境变量 DASHSCOPE_API_KEY")
+    app.logger.warning("未设置环境变量 DASHSCOPE_API_KEY")
 
 DASHSCOPE_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-MODEL_NAME = "qwen3.5-27b-558634c99d67"
+# 使用标准模型，避免私有实例失效
+MODEL_NAME = "qwen-turbo"  # 或 "qwen-plus"
 
-# 创建带超时的 HTTP 客户端，增加 read_timeout 到 120 秒
 http_client = httpx.Client(
     timeout=httpx.Timeout(120.0, connect=30.0, read=120.0, write=30.0)
 )
@@ -39,7 +41,6 @@ def add_headers(response):
     return response
 
 def generate_stream(question):
-    # 非紧急症状过滤（一次性返回）
     mild_pattern = re.compile(
         r'(头(?:有?点)?痛|头(?:有?点)?晕|眼花|疲劳|乏力|失眠|焦虑|消化不良|颈部不适|有点不舒服)',
         re.IGNORECASE
@@ -74,7 +75,13 @@ def generate_stream(question):
         "请务必根据您实际使用的知识提供真实来源，不要编造。"
     )
 
+    if not client:
+        app.logger.error("OpenAI 客户端未初始化，请检查 DASHSCOPE_API_KEY 环境变量")
+        yield "系统配置错误，请联系管理员。"
+        return
+
     try:
+        app.logger.info(f"正在调用 DashScope API，问题：{question[:50]}...")
         stream = client.chat.completions.create(
             model=MODEL_NAME,
             messages=[
@@ -87,12 +94,20 @@ def generate_stream(question):
             max_tokens=1024,
             stream=True
         )
-    except (APITimeoutError, APIConnectionError, APIError) as e:
-        app.logger.error(f"OpenAI API 调用失败: {e}")
-        yield "抱歉，网络或服务暂时不可用，请稍后再试。"
+    except APITimeoutError as e:
+        app.logger.error(f"API 超时: {e}")
+        yield "网络超时，请稍后再试。"
+        return
+    except APIConnectionError as e:
+        app.logger.error(f"API 连接错误: {e}")
+        yield "无法连接到服务，请检查网络或稍后重试。"
+        return
+    except APIError as e:
+        app.logger.error(f"API 错误: {e}")
+        yield "服务返回错误，请稍后重试。"
         return
     except Exception as e:
-        app.logger.error(f"未知 API 错误: {e}")
+        app.logger.error(f"未知 API 错误: {e}", exc_info=True)
         yield "系统出错，请稍后重试。"
         return
 
@@ -107,13 +122,15 @@ def generate_stream(question):
                     yield txt
     except (APITimeoutError, APIConnectionError, APIError) as e:
         app.logger.error(f"流式迭代 API 错误: {e}")
-        yield "网络中断，请重试。"
-        return
-    except Exception as e:
-        app.logger.error(f"流式迭代未知错误: {e}")
-        # 如果已经有一部分回答，先输出已有的，再追加错误提示
         if full_answer:
             yield "\n\n（回答未完整，网络可能中断，请重试）"
+        else:
+            yield "网络中断，请重试。"
+        return
+    except Exception as e:
+        app.logger.error(f"流式迭代未知错误: {e}", exc_info=True)
+        if full_answer:
+            yield "\n\n（回答未完整，请重试）"
         else:
             yield "服务暂时不可用。"
         return
@@ -133,7 +150,7 @@ def stream():
             for ch in generate_stream(q):
                 yield f"data: {json.dumps({'chunk': ch})}\n\n"
         except Exception as e:
-            app.logger.error(f"Stream 生成器异常: {e}")
+            app.logger.error(f"Stream 生成器异常: {e}", exc_info=True)
             yield f"data: {json.dumps({'chunk': '服务暂时不可用，请稍后重试。'})}\n\n"
         yield "data: {\"done\": true}\n\n"
 
