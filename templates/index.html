@@ -41,9 +41,34 @@
         .avatar-card{text-align:center;margin-bottom:40px}
         .avatar-card h3{font-size:min(calc(28px * var(--font-scale)),36px);color:#333;font-weight:600}
         .chat-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-        .quick-questions{padding:12px 16px;background:#f5f9fe;border-bottom:1px solid #e6f0fa;overflow-x:auto;white-space:nowrap;display:flex;gap:10px;scrollbar-width:none;-ms-overflow-style:none}
-        .quick-questions::-webkit-scrollbar{display:none}
-        .quick-questions button{background:#eef3fc;border:1px solid #cce4f5;border-radius:24px;padding:8px 16px;font-size:min(calc(24px * var(--font-scale)),32px);color:#0077cc;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all 0.2s;font-family:inherit}
+        /* ===== 常用问题栏：滚动条可见，可拖动 ===== */
+        .quick-questions{
+            padding:12px 16px;
+            background:#f5f9fe;
+            border-bottom:1px solid #e6f0fa;
+            overflow-x:auto;
+            white-space:nowrap;
+            display:flex;
+            gap:10px;
+            -webkit-overflow-scrolling:touch; /* 移动端平滑滚动 */
+            /* 以下两行已删除，滚动条恢复显示 */
+            /* scrollbar-width: none; */
+            /* -ms-overflow-style: none; */
+        }
+        /* 不再隐藏滚动条，因此移除 ::-webkit-scrollbar 的 display:none */
+        .quick-questions button{
+            background:#eef3fc;
+            border:1px solid #cce4f5;
+            border-radius:24px;
+            padding:8px 16px;
+            font-size:min(calc(24px * var(--font-scale)),32px);
+            color:#0077cc;
+            cursor:pointer;
+            white-space:nowrap;
+            flex-shrink:0;
+            transition:all 0.2s;
+            font-family:inherit;
+        }
         .quick-questions button:hover{background:#0077cc;color:#fff;border-color:#0077cc}
         .quick-questions button:active{transform:scale(0.96)}
         .chat-body{flex:1;padding:20px;overflow-y:auto;background:#fafbfc;overscroll-behavior:contain}
