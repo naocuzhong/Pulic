@@ -15,7 +15,7 @@ if not DASHSCOPE_API_KEY:
     app.logger.warning("未设置环境变量 DASHSCOPE_API_KEY")
 
 DASHSCOPE_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-MODEL_NAME = "qwen3.5-27b-558634c99d67"  # 或 "qwen-plus"
+MODEL_NAME = "qwen-turbo"  # 或 "qwen-plus"
 
 http_client = httpx.Client(
     timeout=httpx.Timeout(120.0, connect=30.0, read=120.0, write=30.0)
@@ -39,6 +39,7 @@ def add_headers(response):
     return response
 
 def generate_stream(question):
+    # 非紧急症状过滤（一次性返回）
     mild_pattern = re.compile(
         r'(头(?:有?点)?痛|头(?:有?点)?晕|眼花|疲劳|乏力|失眠|焦虑|消化不良|颈部不适|有点不舒服)',
         re.IGNORECASE
@@ -52,7 +53,11 @@ def generate_stream(question):
     system_prompt = (
         "你是一个脑卒中健康科普助手，专为老年人及家属提供温和、可信的健康知识。\n\n"
         "【回答风格】\n"
-        "直接回答用户的问题，不要以“您说得对”、“好的”、“是的”等肯定性词语开头。保持语气温和、简洁，直接给出建议或信息。\n\n"
+        "1. 直接回答用户的问题，不要以“您说得对”、“好的”、“是的”等肯定性词语开头。保持语气温和、简洁，直接给出建议或信息。\n"
+        "2. 对于有明确证据支持的建议，请用数字序号列出（如“①”、“②”），每条建议后附上证据等级和来源，格式为“（A级证据，来源：《...》）”。\n"
+        "   证据等级分为：A级（多中心RCT/指南推荐）、B级（单中心研究/专家共识）、C级（经验性建议）。\n"
+        "3. 如果有多条建议，逐条列出。末尾统一附上温馨提示：“（本内容仅供参考，如有不适请及时就医）”。\n"
+        "4. 所有来源必须真实可靠，根据您参考的知识提供，不得编造。\n\n"
         "【重要限制】\n"
         "1. 对于以下症状，绝对不要提及“脑卒中”、“中风”、“紧急就医”、“拨打120”等词汇，只需给予休息观察建议：\n"
         "   - 轻微头痛、头晕、眼花、疲劳、乏力、颈部不适、失眠、焦虑、消化不良等\n"
@@ -66,11 +71,7 @@ def generate_stream(question):
         "   - 突然行走不稳、失去平衡\n\n"
         "3. 对于所有其他健康问题，回答应通俗易懂，引用权威知识，但始终强调“本内容仅供参考，如有不适请及时就医”。\n\n"
         "4. 绝不提供急救指导、药物剂量或替代医生诊断的建议。\n\n"
-        "5. 如果用户描述的症状不在上述列表中，请先询问是否有其他症状，并建议先休息观察，切勿自行套用脑卒中标准。\n\n"
-        "【来源要求】\n"
-        "在回答末尾，请明确附上您所参考的主要来源，格式如“（来源：《中国脑卒中防治指南2023》）”。\n"
-        "如果您的回答参考了多个资料，请依次列出，例如“（来源：《中国脑卒中防治指南2023》；参考：中国康复医学会《脑卒中康复指南2022》）”。\n"
-        "请务必根据您实际使用的知识提供真实来源，不要编造。"
+        "5. 如果用户描述的症状不在上述列表中，请先询问是否有其他症状，并建议先休息观察，切勿自行套用脑卒中标准。"
     )
 
     if not client:
@@ -133,8 +134,9 @@ def generate_stream(question):
             yield "服务暂时不可用。"
         return
 
-    if "来源" not in full_answer and "参考" not in full_answer:
-        yield "\n\n（温馨提示：以上信息仅供参考，具体诊疗请咨询专业医生。）"
+    # 如果模型没有添加温馨提示，自动补一个（但模型已按提示词会自带）
+    if "本内容仅供参考" not in full_answer:
+        yield "\n\n（本内容仅供参考，如有不适请及时就医）"
 
 @app.route('/api/stream', methods=['POST'])
 def stream():
