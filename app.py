@@ -243,11 +243,20 @@ def iflytek_iat(pcm: bytes, timeout=20) -> str:
 
     def on_open(ws):
         def run():
-            chunk_size = 1280  # 讯飞要求每帧音频 ≤ 1280 字节
-            first = True
-            for i in range(0, len(pcm), chunk_size):
-                chunk = pcm[i:i + chunk_size]
-                if first:
+            # ★讯飞 iat WebAPI 采用 JSON 文本帧协议：每帧发送一段 JSON 字符串，
+            #   data.audio 放 base64 编码的音频块；status: 1=首帧/中间帧，2=最后一帧
+            chunk_size = 1280  # 每帧音频 ≤ 1280 字节
+            pos, n = 0, len(pcm)
+            while True:
+                chunk = pcm[pos:pos + chunk_size]
+                is_last = (pos + chunk_size >= n)
+                data = {
+                    'status': 2 if is_last else 1,
+                    'format': 'audio/L16;rate=16000',
+                    'encoding': 'raw',
+                    'audio': base64.b64encode(chunk).decode('utf-8')
+                }
+                if pos == 0:
                     frame = {
                         'common': {'app_id': XFYUN_APP_ID},
                         'business': {
@@ -257,27 +266,18 @@ def iflytek_iat(pcm: bytes, timeout=20) -> str:
                             'vad_eos': 3000,   # 静音 3 秒自动断句
                             'dwa': 'wpgs'      # 开启动态修正
                         },
-                        'data': {
-                            'status': 1,
-                            'format': 'audio/L16;rate=16000',
-                            'encoding': 'raw',
-                            'audio': base64.b64encode(chunk).decode('utf-8')
-                        }
+                        'data': data
                     }
-                    body = json.dumps(frame).encode('utf-8')
-                    payload = len(body).to_bytes(4, 'big') + body + chunk
-                    first = False
                 else:
-                    payload = len(chunk).to_bytes(4, 'big') + chunk
+                    frame = {'data': data}
                 try:
-                    ws.send(payload, opcode=websocket.ABNF.OPCODE_BINARY)
+                    ws.send(json.dumps(frame))  # 文本帧（默认 opcode），服务器按 JSON 解析
                 except Exception:
                     break
+                if is_last:
+                    break
+                pos += chunk_size
                 time.sleep(0.01)
-            try:
-                ws.send((0).to_bytes(4, 'big') + b'end', opcode=websocket.ABNF.OPCODE_BINARY)
-            except Exception:
-                pass
         threading.Thread(target=run, daemon=True).start()
 
     def on_error(ws, error):
