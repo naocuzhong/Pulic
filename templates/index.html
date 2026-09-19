@@ -1,4 +1,4 @@
-	<!DOCTYPE html>
+		<!DOCTYPE html>
 	<html lang="zh-CN">
 	<head>
 	    <meta charset="UTF-8">
@@ -411,7 +411,12 @@
 	    micNoSpeech:'没有检测到语音，请靠近麦克风再试一次',
 	    micNoDevice:'未检测到麦克风设备，请检查设备连接',
 	    micBusy:'麦克风可能被其他应用占用（通话/录音/语音助手等），请关闭后重试',
-	    micSysDenied:'浏览器已允许麦克风，但识别仍被拒绝：大概率是手机系统层权限未开（设置 → 应用 → Chrome → 权限 → 麦克风），或被安全软件拦截',
+	    micRecStart:'🎙️ 录音中…说完再点一次麦克风',
+	    micRecognizing:'⏳ 正在识别，请稍候…',
+	    micRecFail:'录音失败，请重试',
+	    micSttFail:'识别失败，请检查网络或稍后重试',
+	    micSttEmpty:'没有听清，请靠近麦克风再试一次',
+	    micSysDenied:'本机语音识别服务不可用（Chrome 语音识别依赖谷歌在线服务，本机不支持）：已自动切换为「录音识别」模式——点击麦克风开始说话，说完再点一次，自动识别并发送',
 	    micUnsupported:'当前浏览器不支持语音输入，请使用 Chrome / Edge',
 	    micFail:'麦克风启动失败，请重试',
 	    voiceUnsupported:'当前浏览器不支持语音播报功能',
@@ -470,7 +475,12 @@
 	    micNoSpeech:'No speech detected. Please move closer to the mic and try again',
 	    micNoDevice:'No microphone found. Please check your device',
 	    micBusy:'Microphone may be occupied by another app (call/recorder/assistant). Close it and retry',
-	    micSysDenied:'Browser allows the mic but recognition is still blocked. Most likely the Android system permission is off (Settings → Apps → Chrome → Permissions → Microphone), or blocked by security software',
+	    micRecStart:'🎙️ Recording… tap the mic again when finished',
+	    micRecognizing:'⏳ Recognizing, please wait…',
+	    micRecFail:'Recording failed, please retry',
+	    micSttFail:'Recognition failed, check your network and retry',
+	    micSttEmpty:"Didn't catch that. Please speak closer to the mic and retry",
+	    micSysDenied:'On-device speech recognition unavailable (Chrome relies on Google online services): switched to Record & Recognize mode — tap the mic to speak, tap again to recognize and send',
 	    micUnsupported:'Voice input not supported. Please use Chrome / Edge',
 	    micFail:'Failed to start microphone, please retry',
 	    voiceUnsupported:'Speech synthesis is not supported in this browser',
@@ -859,6 +869,9 @@
 	}
 		/* ===== 语音输入（★二次修复：设置中已"允许"仍报"权限被拒绝"） ===== */
 	let micAutoRetried = false, micBusy = false;
+	/* ★录音识别模式：'auto'=先尝试浏览器语音识别；'record'=录音上传后端转写（识别服务不可用设备自动切换） */
+	let recMode = 'auto';
+	let recordActive = false, recordStream = null, mediaRecorder = null, recordChunks = [];
 	/* 麦克风预热——本次修复的核心：
 	   Chrome/Android 缺陷：在「设置→网站设置→麦克风」中手动设为"允许"后，
 	   webkitSpeechRecognition 依然报 not-allowed（它只认页面内弹窗授权）。
@@ -921,7 +934,10 @@
 	            micAutoRetried = true;
 	            warmUpMic().then(w => {
 	                if (w === 'ok') {
-	                    /* 浏览器判定麦克风已允许，但识别层仍拒绝 → 多为系统层权限或安全软件拦截 */
+	                    /* ★诊断结论：getUserMedia 成功 = 各层麦克风权限均正常（截图2已证实），
+	                       但识别层仍拒绝 → 本机缺少谷歌语音识别服务（国内无谷歌服务手机必现），
+	                       自动切换为「录音识别」模式（MediaRecorder 录音 → 上传 /api/stt 转写） */
+	                    recMode = 'record';
 	                    toast(tr('micSysDenied'), 9000);
 	                }
 	                else if (w === 'nodevice') toast(tr('micNoDevice'));
@@ -929,7 +945,7 @@
 	            });
 	            return;
 	        }
-	        if (c === 'service-not-allowed') toast(tr('micServiceBlocked'), 6000);
+	        if (c === 'service-not-allowed') { recMode = 'record'; toast(tr('micServiceBlocked'), 7000); }
 	        else if (c === 'not-allowed') micDeniedToast();
 	        else if (c === 'network') toast(tr(isMobileDevice() ? 'micNetworkMobile' : 'micNetwork'), 6000);
 	        else if (c === 'no-speech') toast(tr('micNoSpeech'));
@@ -945,7 +961,14 @@
 	}
 	async function toggleRec(){
 	    if (/MicroMessenger|QQ\//i.test(navigator.userAgent)) { toast(tr('micInApp'), 6000); return; }
-	    if (micBusy) return;                       /* 预热进行中，忽略重复点击 */
+	    if (micBusy) return;                       /* 预热/识别进行中，忽略重复点击 */
+	    /* ★★ 录音识别模式分支：识别服务不可用的设备自动进入；无 SpeechRecognition 的浏览器直接用 */
+	    const hasSR = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+	    if (recMode === 'record' || !hasSR) {
+	        if (recordActive) { await stopAndRecognize(); return; }
+	        await startRecordMode();
+	        return;
+	    }
 	    if (isRecording) { stopRec(); return; }    /* 录音中再次点击 = 主动停止 */
 	    if (!recognition && !initRecognition()) return;
 	    micBusy = true;
@@ -965,6 +988,78 @@
 	    isRecording = false;
 	    getEl('micBtn')?.classList.remove('recording');
 	    if (recognition) { try { recognition.stop(); } catch(e){} }
+	}
+	/* ================================================================
+	   ★★ 录音识别模式（国内无谷歌服务手机的兜底方案）
+	   原理：getUserMedia + MediaRecorder 录音（不依赖谷歌服务，已验证可用），
+	   停止后在前端转成 16kHz 单声道 WAV（复用 blobToWav，免服务端 ffmpeg），
+	   POST 到后端 /api/stt 转写成文字，自动填入输入框并发送。
+	   ================================================================ */
+	function cleanupRecord(){
+	    recordActive = false;
+	    try { mediaRecorder && mediaRecorder.state !== 'inactive' && mediaRecorder.stop(); } catch(e){}
+	    if (recordStream) { recordStream.getTracks().forEach(t => t.stop()); recordStream = null; }
+	    mediaRecorder = null; recordChunks = [];
+	    getEl('micBtn')?.classList.remove('recording');
+	}
+	async function startRecordMode(){
+	    micBusy = true;
+	    try {
+	        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+	        recordStream = stream; recordChunks = [];
+	        const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus'
+	                   : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
+	        try { mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined); }
+	        catch(e) { mediaRecorder = new MediaRecorder(stream); }
+	        mediaRecorder.ondataavailable = e => { if (e.data && e.data.size) recordChunks.push(e.data); };
+	        mediaRecorder.onerror = () => { cleanupRecord(); toast(tr('micRecFail')); };
+	        mediaRecorder.start(250);
+	        recordActive = true;
+	        getEl('micBtn')?.classList.add('recording');
+	        toast(tr('micRecStart'), 2500);
+	    } catch(err) {
+	        console.error('[mic] record start failed:', err);
+	        toast(tr('micFail'));
+	    } finally {
+	        micBusy = false;
+	    }
+	}
+	async function stopAndRecognize(){
+	    if (!mediaRecorder || !recordActive) { cleanupRecord(); return; }
+	    micBusy = true;
+	    recordActive = false;
+	    getEl('micBtn')?.classList.remove('recording');
+	    let blob = null;
+	    try {
+	        const stopped = new Promise(res => {
+	            mediaRecorder.ondataavailable = e => { if (e.data && e.data.size) recordChunks.push(e.data); };
+	            mediaRecorder.onstop = res;
+	        });
+	        try { mediaRecorder.stop(); } catch(e){}
+	        await Promise.race([stopped, new Promise(r => setTimeout(r, 3000))]);
+	        blob = new Blob(recordChunks, { type: (mediaRecorder && mediaRecorder.mimeType) || 'audio/webm' });
+	    } catch(e){}
+	    if (recordStream) { recordStream.getTracks().forEach(t => t.stop()); recordStream = null; }
+	    mediaRecorder = null; recordChunks = [];
+	    if (!blob || blob.size < 600) { micBusy = false; toast(tr('micSttEmpty')); return; }
+	    toast(tr('micRecognizing'), 15000);
+	    try {
+	        const wav = await blobToWav(blob);
+	        const resp = await fetch('/api/stt', { method: 'POST', headers: { 'Content-Type': 'audio/wav' }, body: wav });
+	        const data = await resp.json().catch(() => ({}));
+	        micBusy = false;
+	        if (resp.ok && data.text && String(data.text).trim()) {
+	            const inp = getEl('input');
+	            if (inp) inp.value = String(data.text).trim();
+	            send();
+	        } else {
+	            toast((data && data.error) ? tr('micSttFail') : tr('micSttEmpty'));
+	        }
+	    } catch(err) {
+	        console.error('[mic] stt failed:', err);
+	        micBusy = false;
+	        toast(tr('micSttFail'));
+	    }
 	}
 	function getAssistantMessages(){
 	    return Array.from(document.querySelectorAll('.chat-body .message.assistant:not(.loading-message) .msg-bubble'))
