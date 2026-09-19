@@ -1,4 +1,4 @@
-		<!DOCTYPE html>
+			<!DOCTYPE html>
 	<html lang="zh-CN">
 	<head>
 	    <meta charset="UTF-8">
@@ -553,10 +553,18 @@
 	}
 	/* ================= 页内 Toast / 确认弹窗 ================= */
 	function toast(msg, dur){
-	    const wrap = getEl('toastWrap'); if (!wrap || !msg) return;
+	    const wrap = getEl('toastWrap'); if (!wrap || !msg) return null;
 	    const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
 	    wrap.appendChild(t);
-	    setTimeout(() => { t.style.transition = 'opacity .3s'; t.style.opacity = '0'; setTimeout(() => t.remove(), 320); }, dur || 3200);
+	    t._timer = setTimeout(() => { t.style.transition = 'opacity .3s'; t.style.opacity = '0'; setTimeout(() => t.remove(), 320); }, dur || 3200);
+	    return t;
+	}
+	/* ★手动移除某个 toast（识别结束立即清除提示用） */
+	function dismissToast(t){
+	    if (!t || !t.parentNode) return;
+	    clearTimeout(t._timer);
+	    t.style.transition = 'opacity .2s'; t.style.opacity = '0';
+	    setTimeout(() => t.remove(), 220);
 	}
 	function customConfirm(text){
 	    return new Promise(resolve => {
@@ -1042,11 +1050,14 @@
 	    if (recordStream) { recordStream.getTracks().forEach(t => t.stop()); recordStream = null; }
 	    mediaRecorder = null; recordChunks = [];
 	    if (!blob || blob.size < 600) { micBusy = false; toast(tr('micSttEmpty')); return; }
-	    toast(tr('micRecognizing'), 15000);
+	    /* ★录音质量前置检查：无声/音量过低直接提示，不浪费识别额度也更快反馈 */
+	    if (!(await checkAudioHasSound(blob))) { micBusy = false; toast(tr('micSttEmpty')); return; }
+	    const t = toast(tr('micRecognizing'), 20000);
 	    try {
 	        const wav = await blobToWav(blob);
 	        const resp = await fetch('/api/stt', { method: 'POST', headers: { 'Content-Type': 'audio/wav' }, body: wav });
 	        const data = await resp.json().catch(() => ({}));
+	        dismissToast(t);   /* ★识别完成立即移除提示，不再滞留 */
 	        micBusy = false;
 	        if (resp.ok && data.text && String(data.text).trim()) {
 	            const inp = getEl('input');
@@ -1057,6 +1068,7 @@
 	        }
 	    } catch(err) {
 	        console.error('[mic] stt failed:', err);
+	        dismissToast(t);
 	        micBusy = false;
 	        toast(tr('micSttFail'));
 	    }
