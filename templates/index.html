@@ -4,6 +4,8 @@
 	    <meta charset="UTF-8">
 	    <!-- ★移动端修复1：增加 interactive-widget，键盘弹起时压缩页面布局而非遮挡 -->
 	    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover, interactive-widget=resizes-content">
+	    <!-- ★语音修复0：声明本页允许使用麦克风（防 Permissions-Policy 默认拦截；若被 iframe 嵌入，父页面还需加 allow="microphone"） -->
+	    <meta http-equiv="Permissions-Policy" content="microphone=(self)">
 	    <title>福医卒中通 · 脑卒中智能问答助手</title>
 	    <style>
 	        /* ★移动端修复2：去除移动端点按灰色高亮 */
@@ -199,7 +201,8 @@
 	            .settings-modal input[type="number"],.audio-select{font-size:max(16px,calc(13px * var(--font-scale)))}
 	        }
 	    </style>
-	</head>
+	<base target="_blank">
+</head>
 	<body>
 	<div class="container">
 	    <div class="main-card">
@@ -400,13 +403,15 @@
 	    audioRecordingNow:'音频录制中，请稍后再试',
 	    micPermission:'麦克风权限被拒绝：请点击地址栏左侧图标，允许"麦克风"后重试',
 	    /* ★移动端修复8：手机端专属权限提示 + 内嵌浏览器引导 */
-	    micPermissionMobile:'麦克风权限被拒绝：手机端请在浏览器「设置 → 网站设置 → 麦克风」中设为允许后，刷新页面重试',
+	    micPermissionMobile:'麦克风权限被拒绝，请检查两层权限：\n① 浏览器「设置 → 网站设置 → 麦克风」设为允许\n② 手机系统「设置 → 应用 → Chrome → 权限 → 麦克风」设为允许\n然后刷新页面重试',
 		micNetworkMobile:'语音识别连接失败：手机浏览器的语音识别依赖谷歌在线服务，部分手机或网络环境无法使用，请改用打字输入',
 	    micServiceBlocked:'语音服务被限制：手机端语音识别依赖谷歌在线服务，无谷歌服务的手机或部分网络环境无法使用，请改用打字输入',
 	    micInApp:'微信/QQ内嵌浏览器无法使用麦克风：请点右上角「…」→「在浏览器打开」，用系统浏览器访问后再试',
 	    micNetwork:'语音识别服务连接失败，请检查网络后重试（需联网）',
 	    micNoSpeech:'没有检测到语音，请靠近麦克风再试一次',
 	    micNoDevice:'未检测到麦克风设备，请检查设备连接',
+	    micBusy:'麦克风可能被其他应用占用（通话/录音/语音助手等），请关闭后重试',
+	    micSysDenied:'浏览器已允许麦克风，但识别仍被拒绝：大概率是手机系统层权限未开（设置 → 应用 → Chrome → 权限 → 麦克风），或被安全软件拦截',
 	    micUnsupported:'当前浏览器不支持语音输入，请使用 Chrome / Edge',
 	    micFail:'麦克风启动失败，请重试',
 	    voiceUnsupported:'当前浏览器不支持语音播报功能',
@@ -457,13 +462,15 @@
 	    audioRecordingNow:'Recording in progress, please wait',
 	    micPermission:'Microphone permission denied. Allow mic access in the address bar and retry',
 	    /* ★移动端修复8：手机端专属权限提示 + 内嵌浏览器引导 */
-	    micPermissionMobile:'Microphone blocked on mobile: open browser Settings → Site settings → Microphone → Allow, then reload this page',
+	    micPermissionMobile:'Microphone blocked. Please check BOTH levels:\n1. Browser: Settings → Site settings → Microphone → Allow\n2. Android system: Settings → Apps → Chrome → Permissions → Microphone → Allow\nThen reload this page',
 		micNetworkMobile:'Speech service unreachable: mobile speech recognition relies on Google online services, which may be unavailable on some devices/networks. Please type instead',
 	    micServiceBlocked:'Speech service blocked: mobile recognition relies on Google services. Unavailable on devices without them. Please type instead',
 	    micInApp:'Voice input is unavailable inside WeChat/QQ. Tap "…" (top-right) → "Open in browser" and retry',
 	    micNetwork:'Speech service unreachable. Check your network and retry',
 	    micNoSpeech:'No speech detected. Please move closer to the mic and try again',
 	    micNoDevice:'No microphone found. Please check your device',
+	    micBusy:'Microphone may be occupied by another app (call/recorder/assistant). Close it and retry',
+	    micSysDenied:'Browser allows the mic but recognition is still blocked. Most likely the Android system permission is off (Settings → Apps → Chrome → Permissions → Microphone), or blocked by security software',
 	    micUnsupported:'Voice input not supported. Please use Chrome / Edge',
 	    micFail:'Failed to start microphone, please retry',
 	    voiceUnsupported:'Speech synthesis is not supported in this browser',
@@ -862,19 +869,29 @@
 	   完成后马上释放采流，不产生任何录音。 */
 	async function warmUpMic(){
 	    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return 'unsupported';
+	    /* ★语音修复1：读取浏览器层权限真实状态（prompt / granted / denied），便于对照系统层 */
+	    try {
+	        const st = await navigator.permissions.query({ name: 'microphone' });
+	        console.log('[mic] permission state =', st.state);
+	    } catch(e){}
 	    try {
 	        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 	        stream.getTracks().forEach(t => t.stop());
 	        return 'ok';
 	    } catch(err){
 	        const n = err && err.name;
+	        console.error('[mic] getUserMedia failed:', n, err && err.message);
+	        /* ★语音修复2：诊断 toast，把真实错误名暴露给用户截图反馈 */
+	        toast('🩺 语音诊断：' + (n || '未知') + (err && err.message ? ' / ' + err.message : ''), 4500);
 	        if (n === 'NotAllowedError' || n === 'SecurityError' || n === 'PermissionDeniedError') return 'denied';
-	        if (n === 'NotFoundError' || n === 'NotReadableError') return 'nodevice';
+	        if (n === 'NotFoundError') return 'nodevice';
+	        /* ★语音修复3：NotReadableError = 麦克风被其他App占用，单独提示 */
+	        if (n === 'NotReadableError' || n === 'AbortError') { toast(tr('micBusy'), 5000); return 'fail'; }
 	        return 'fail';
 	    }
 	}
 	function micDeniedToast(){
-	    toast(tr(isMobileDevice() ? 'micPermissionMobile' : 'micPermission'), 6000);
+	    toast(tr(isMobileDevice() ? 'micPermissionMobile' : 'micPermission'), 9000);
 	}
 	/* 置为录音状态并启动识别 */
 	function startRecUI(){
@@ -903,7 +920,10 @@
 	        if ((c === 'not-allowed' || c === 'service-not-allowed') && !micAutoRetried) {
 	            micAutoRetried = true;
 	            warmUpMic().then(w => {
-	                if (w === 'ok') setTimeout(startRecUI, 250);
+	                if (w === 'ok') {
+	                    /* 浏览器判定麦克风已允许，但识别层仍拒绝 → 多为系统层权限或安全软件拦截 */
+	                    toast(tr('micSysDenied'), 9000);
+	                }
 	                else if (w === 'nodevice') toast(tr('micNoDevice'));
 	                else micDeniedToast();
 	            });
