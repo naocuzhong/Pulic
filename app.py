@@ -7,6 +7,18 @@ import logging
 from openai import OpenAI, APIError, APITimeoutError, APIConnectionError
 import httpx
 
+# ===== 讯飞语音听写（流式版）WebAPI 转写 新增 import =====
+import base64
+import hashlib
+import hmac
+import ssl
+import threading
+import time
+from datetime import datetime
+from urllib.parse import urlencode
+
+import websocket  # pip install websocket-client
+
 app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
@@ -16,6 +28,18 @@ if not DASHSCOPE_API_KEY:
 
 DASHSCOPE_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 MODEL_NAME = "qwen3.5-27b-558634c99d67"  # 或 "qwen-plus"
+
+# ===== 讯飞语音听写配置（在 Render 面板设置同名环境变量）=====
+XFYUN_APP_ID = os.environ.get("XFYUN_APP_ID", "")
+XFYUN_API_KEY = os.environ.get("XFYUN_API_KEY", "")
+XFYUN_API_SECRET = os.environ.get("XFYUN_API_SECRET", "")
+if not (XFYUN_APP_ID and XFYUN_API_KEY and XFYUN_API_SECRET):
+    app.logger.warning("未设置讯飞环境变量 XFYUN_APP_ID / XFYUN_API_KEY / XFYUN_API_SECRET，语音转写不可用")
+
+XFYUN_HOST = 'iat-api.xfyun.cn'
+XFYUN_PATH = '/v2/iat'
+XFYUN_WS_URL = 'wss://iat-api.xfyun.cn/v2/iat'
+
 
 http_client = httpx.Client(
     timeout=httpx.Timeout(120.0, connect=30.0, read=120.0, write=30.0)
@@ -155,6 +179,144 @@ def stream():
         yield "data: {\"done\": true}\n\n"
 
     return Response(gen(), mimetype="text/event-stream")
+
+# ============================================================
+# 讯飞语音听写（流式版）WebAPI —— 前端「录音识别模式」POST 16kHz WAV 到 /api/stt
+# ============================================================
+def xfyun_get_auth_url():
+    """按讯飞规则生成鉴权 URL（HMAC-SHA256 签名）"""
+    date = datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
+    signature_origin = 'host: %s\ndate: %s\nGET %s HTTP/1.1' % (XFYUN_HOST, date, XFYUN_PATH)
+    signature_sha = hmac.new(XFYUN_API_SECRET.encode('utf-8'),
+                             signature_origin.encode('utf-8'),
+                             hashlib.sha256).digest()
+    signature = base64.b64encode(signature_sha).decode('utf-8')
+    authorization_origin = ('api_key="%s", algorithm="hmac-sha256", '
+                            'headers="host date request-line", signature="%s"') % (XFYUN_API_KEY, signature)
+    authorization = base64.b64encode(authorization_origin.encode('utf-8')).decode('utf-8')
+    return '%s?%s' % (XFYUN_WS_URL, urlencode({'authorization': authorization, 'date': date, 'host': XFYUN_HOST}))
+
+
+def wav_to_pcm(wav: bytes) -> bytes:
+    """前端 blobToWav 产出标准 PCM16 WAV，解析 data chunk 取裸 PCM；非 WAV 则原样返回"""
+    if len(wav) < 44 or wav[:4] != b'RIFF':
+        return wav
+    i = 12
+    while i + 8 <= len(wav):
+        cid = wav[i:i + 4]
+        csz = int.from_bytes(wav[i + 4:i + 8], 'little')
+        if cid == b'data':
+            return wav[i + 8:i + 8 + csz]
+        i += 8 + csz + (csz & 1)
+    return wav[44:]
+
+
+def iflytek_iat(pcm: bytes, timeout=20) -> str:
+    """调用讯飞语音听写 WebSocket 接口，返回识别文本"""
+    pcm = pcm[:16000 * 2 * 60]  # 最长 60 秒
+    state = {'final_parts': [], 'r1_texts': {}, 'err': None}
+
+    def on_message(ws, message):
+        try:
+            data = json.loads(message)
+        except Exception:
+            return
+        code = data.get('code')
+        if code != 0:
+            state['err'] = '讯飞错误 %s: %s' % (code, data.get('message'))
+            ws.close()
+            return
+        d = data.get('data') or {}
+        if d.get('status') == 2:  # 最后一帧
+            ws.close()
+            return
+        result = d.get('result')
+        if not result:
+            return
+        pgs = result.get('pgs', 'r2')
+        text = ''.join(''.join(cw.get('w', '') for cw in w.get('cw', []))
+                       for w in result.get('ws', []))
+        if pgs == 'r1':
+            state['r1_texts'][result.get('sn')] = text  # 动态修正的中间结果按 sn 覆盖
+        else:
+            state['final_parts'].append(text)
+
+    def on_open(ws):
+        def run():
+            chunk_size = 1280  # 讯飞要求每帧音频 ≤ 1280 字节
+            first = True
+            for i in range(0, len(pcm), chunk_size):
+                chunk = pcm[i:i + chunk_size]
+                if first:
+                    frame = {
+                        'common': {'app_id': XFYUN_APP_ID},
+                        'business': {
+                            'language': 'zh_cn',
+                            'domain': 'iat',
+                            'accent': 'mandarin',
+                            'vad_eos': 3000,   # 静音 3 秒自动断句
+                            'dwa': 'wpgs'      # 开启动态修正
+                        },
+                        'data': {
+                            'status': 1,
+                            'format': 'audio/L16;rate=16000',
+                            'encoding': 'raw',
+                            'audio': base64.b64encode(chunk).decode('utf-8')
+                        }
+                    }
+                    body = json.dumps(frame).encode('utf-8')
+                    payload = len(body).to_bytes(4, 'big') + body + chunk
+                    first = False
+                else:
+                    payload = len(chunk).to_bytes(4, 'big') + chunk
+                try:
+                    ws.send(payload, opcode=websocket.ABNF.OPCODE_BINARY)
+                except Exception:
+                    break
+                time.sleep(0.01)
+            try:
+                ws.send((0).to_bytes(4, 'big') + b'end', opcode=websocket.ABNF.OPCODE_BINARY)
+            except Exception:
+                pass
+        threading.Thread(target=run, daemon=True).start()
+
+    def on_error(ws, error):
+        state['err'] = '讯飞连接错误: %s' % error
+
+    def on_close(ws, code, msg):
+        pass
+
+    ws = websocket.WebSocketApp(xfyun_get_auth_url(),
+                                on_open=on_open,
+                                on_message=on_message,
+                                on_error=on_error,
+                                on_close=on_close)
+    watchdog = threading.Timer(timeout, lambda: ws.close())
+    watchdog.start()
+    ws.run_forever(sslopt={'cert_reqs': ssl.CERT_NONE})
+    watchdog.cancel()
+
+    if state['err']:
+        raise RuntimeError(state['err'])
+    if state['final_parts']:
+        return ''.join(state['final_parts'])
+    return ''.join(state['r1_texts'][k] for k in sorted(state['r1_texts']))
+
+
+@app.route('/api/stt', methods=['POST'])
+def stt():
+    if not (XFYUN_APP_ID and XFYUN_API_KEY and XFYUN_API_SECRET):
+        return jsonify({'text': '', 'error': '服务端未配置讯飞密钥'}), 500
+    wav_bytes = request.get_data()
+    if not wav_bytes or len(wav_bytes) < 1000:
+        return jsonify({'text': '', 'error': 'audio too short'}), 400
+    try:
+        text = iflytek_iat(wav_to_pcm(wav_bytes))
+        return jsonify({'text': text})
+    except Exception as e:
+        app.logger.error('[stt] iflytek failed: %s', e)
+        return jsonify({'text': '', 'error': str(e)}), 500
+
 
 @app.route('/api/switch_lang', methods=['POST', 'OPTIONS'])
 def switch_lang():
