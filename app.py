@@ -227,19 +227,19 @@ def iflytek_iat(pcm: bytes, timeout=20) -> str:
             ws.close()
             return
         d = data.get('data') or {}
-        if d.get('status') == 2:  # 最后一帧
-            ws.close()
-            return
+        # ★修复：最后一帧(status=2)上通常带着最终识别结果，必须先解析再关连接
         result = d.get('result')
-        if not result:
-            return
-        pgs = result.get('pgs', 'r2')
-        text = ''.join(''.join(cw.get('w', '') for cw in w.get('cw', []))
-                       for w in result.get('ws', []))
-        if pgs == 'r1':
-            state['r1_texts'][result.get('sn')] = text  # 动态修正的中间结果按 sn 覆盖
-        else:
-            state['final_parts'].append(text)
+        if result:
+            pgs = result.get('pgs', 'r2')
+            text = ''.join(''.join(cw.get('w', '') for cw in w.get('cw', []))
+                           for w in result.get('ws', []))
+            if pgs == 'r1':
+                state['r1_texts'][result.get('sn')] = text  # 动态修正的中间结果按 sn 覆盖
+            else:
+                state['final_parts'].append(text)
+            app.logger.info('[stt] 收到结果 status=%s pgs=%s text=%s', d.get('status'), pgs, text[:30])
+        if d.get('status') == 2:  # 最后一帧处理完后关闭
+            ws.close()
 
     def on_open(ws):
         def run():
@@ -247,6 +247,7 @@ def iflytek_iat(pcm: bytes, timeout=20) -> str:
             #   data.audio 放 base64 编码的音频块；status: 1=首帧/中间帧，2=最后一帧
             chunk_size = 1280  # 每帧音频 ≤ 1280 字节
             pos, n = 0, len(pcm)
+            frame_count = 0
             while True:
                 chunk = pcm[pos:pos + chunk_size]
                 is_last = (pos + chunk_size >= n)
@@ -274,10 +275,12 @@ def iflytek_iat(pcm: bytes, timeout=20) -> str:
                     ws.send(json.dumps(frame))  # 文本帧（默认 opcode），服务器按 JSON 解析
                 except Exception:
                     break
+                frame_count += 1
                 if is_last:
                     break
                 pos += chunk_size
                 time.sleep(0.01)
+            app.logger.info('[stt] 音频发送完成：%d 帧, pcm=%d 字节', frame_count, len(pcm))
         threading.Thread(target=run, daemon=True).start()
 
     def on_error(ws, error):
@@ -300,7 +303,10 @@ def iflytek_iat(pcm: bytes, timeout=20) -> str:
         raise RuntimeError(state['err'])
     if state['final_parts']:
         return ''.join(state['final_parts'])
-    return ''.join(state['r1_texts'][k] for k in sorted(state['r1_texts']))
+    if state['r1_texts']:
+        return ''.join(state['r1_texts'][k] for k in sorted(state['r1_texts']))
+    app.logger.warning('[stt] 讯飞返回空文本（pcm=%d 字节），疑似录音无声音或音频异常', len(pcm))
+    return ''
 
 
 @app.route('/api/stt', methods=['POST'])
