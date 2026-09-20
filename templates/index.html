@@ -1,4 +1,4 @@
-			<!DOCTYPE html>
+	<!DOCTYPE html>
 	<html lang="zh-CN">
 	<head>
 	    <meta charset="UTF-8">
@@ -416,7 +416,7 @@
 	    micRecFail:'录音失败，请重试',
 	    micSttFail:'识别失败，请检查网络或稍后重试',
 	    micSttEmpty:'没有听清，请靠近麦克风再试一次',
-	    micSysDenied:'本机语音识别服务不可用（Chrome 语音识别依赖谷歌在线服务，本机不支持）：已自动切换为「录音识别」模式——点击麦克风开始说话，说完再点一次，自动识别并发送',
+	    micSysDenied:'语音识别不可用，已改用录音模式：点麦克风说话，再点一次即可发送',
 	    micUnsupported:'当前浏览器不支持语音输入，请使用 Chrome / Edge',
 	    micFail:'麦克风启动失败，请重试',
 	    voiceUnsupported:'当前浏览器不支持语音播报功能',
@@ -480,7 +480,7 @@
 	    micRecFail:'Recording failed, please retry',
 	    micSttFail:'Recognition failed, check your network and retry',
 	    micSttEmpty:"Didn't catch that. Please speak closer to the mic and retry",
-	    micSysDenied:'On-device speech recognition unavailable (Chrome relies on Google online services): switched to Record & Recognize mode — tap the mic to speak, tap again to recognize and send',
+	    micSysDenied:'Speech recognition unavailable. Record mode on: tap the mic to speak, tap again to send',
 	    micUnsupported:'Voice input not supported. Please use Chrome / Edge',
 	    micFail:'Failed to start microphone, please retry',
 	    voiceUnsupported:'Speech synthesis is not supported in this browser',
@@ -1573,6 +1573,9 @@
 	    if (isMobileDevice()) {
 	        const mAudioBtn = getEl('saveAudioBtn');
 	        if (mAudioBtn) { mAudioBtn.disabled = true; mAudioBtn.title = tr('audioUnsupported'); }
+	        /* ★手机端默认直接进录音识别模式：本机浏览器语音识别依赖谷歌服务（国内手机基本不可用），
+	           跳过注定失败的尝试与长提示，点麦克风即录音（"🎙️ 录音中…"提示自带操作引导） */
+	        recMode = 'record';
 	    }
 	});
 	</script>
