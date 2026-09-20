@@ -1,4 +1,23 @@
 # -*- coding: utf-8 -*-
+"""
+============================================================================
+ 福医卒中通 · 脑卒中智能问答助手（后端服务 app.py）
+ ----------------------------------------------------------------------------
+ 项目简介：面向脑卒中患者及家属的健康科普问答系统后端，基于 Flask
+           提供以下能力：
+           1. POST /api/stream      健康问答流式输出（SSE，阿里云百炼大模型）
+           2. POST /api/stt         录音识别转写（讯飞语音听写流式版 WebAPI）
+           3. POST /api/switch_lang 界面语言切换状态同步
+           4. GET  /                渲染前端页面 templates/index.html
+ 技术栈：  Python 3 + Flask + OpenAI SDK(兼容 DashScope) + websocket-client
+ 配置方式：环境变量（Render 面板设置）：
+           DASHSCOPE_API_KEY   阿里云百炼大模型密钥
+           XFYUN_APP_ID        讯飞应用 APPID
+           XFYUN_API_KEY       讯飞应用 APIKey
+           XFYUN_API_SECRET    讯飞应用 APISecret
+ 部署方式：GitHub 仓库 + Render 云服务（gunicorn 运行）
+============================================================================
+"""
 from flask import Flask, request, jsonify, render_template, Response
 import re
 import os
@@ -56,6 +75,13 @@ else:
 
 @app.after_request
 def add_headers(response):
+    """统一响应头中间件：放行跨域、禁用缓存。
+
+    参数:
+        response: Flask 响应对象
+    返回:
+        附加了 CORS 与缓存控制头的响应对象
+    """
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
@@ -63,6 +89,20 @@ def add_headers(response):
     return response
 
 def generate_stream(question):
+    """生成健康问答的流式回复（生成器）。
+
+    处理流程：
+        1. 非紧急轻症状快速拦截，返回固定休息观察建议；
+        2. 构造脑卒中科普系统提示词，调用 DashScope 大模型流式接口；
+        3. 逐 chunk 清洗（去除 Markdown 加粗）并 yield；
+        4. 各类网络/API 异常兜底，保证流不中断；
+        5. 结尾自动补全就医提示语。
+
+    参数:
+        question: 用户问题文本
+     yields:
+        逐段回答文本
+    """
     # 非紧急症状过滤（一次性返回）
     mild_pattern = re.compile(
         r'(头(?:有?点)?痛|头(?:有?点)?晕|眼花|疲劳|乏力|失眠|焦虑|消化不良|颈部不适|有点不舒服)',
@@ -164,6 +204,11 @@ def generate_stream(question):
 
 @app.route('/api/stream', methods=['POST'])
 def stream():
+    """问答接口：POST /api/stream。
+
+    请求体: {"question": "用户问题"}
+    响应:   text/event-stream 流式数据（data: {"chunk": "..."} 格式）
+    """
     data = request.get_json() or {}
     q = data.get("question", "")
     if not q:
@@ -184,6 +229,11 @@ def stream():
 # 讯飞语音听写（流式版）WebAPI —— 前端「录音识别模式」POST 16kHz WAV 到 /api/stt
 # ============================================================
 def xfyun_get_auth_url():
+    """按讯飞规则生成鉴权 URL（HMAC-SHA256 签名）。
+
+    返回:
+        带 authorization/date/host 查询参数的 wss 完整地址
+    """
     """按讯飞规则生成鉴权 URL（HMAC-SHA256 签名）"""
     date = datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
     signature_origin = 'host: %s\ndate: %s\nGET %s HTTP/1.1' % (XFYUN_HOST, date, XFYUN_PATH)
@@ -198,6 +248,13 @@ def xfyun_get_auth_url():
 
 
 def wav_to_pcm(wav: bytes) -> bytes:
+    """前端 blobToWav 产出标准 PCM16 WAV，解析 data chunk 取裸 PCM。
+
+    参数:
+        wav: WAV 格式字节流（16kHz 单声道 PCM16）
+    返回:
+        裸 PCM 字节流；非 WAV 输入则原样返回
+    """
     """前端 blobToWav 产出标准 PCM16 WAV，解析 data chunk 取裸 PCM；非 WAV 则原样返回"""
     if len(wav) < 44 or wav[:4] != b'RIFF':
         return wav
@@ -212,6 +269,20 @@ def wav_to_pcm(wav: bytes) -> bytes:
 
 
 def iflytek_iat(pcm: bytes, timeout=20) -> str:
+    """调用讯飞语音听写 WebSocket 接口完成语音识别。
+
+    协议要点：JSON 文本帧传输，data.audio 为 base64 音频块，
+    status=1 首帧/中间帧、status=2 末帧；开启 wpgs 动态修正后
+    中间结果按 sn 覆盖合并，最终结果顺序拼接。
+
+    参数:
+        pcm:    16kHz 单声道裸 PCM 音频字节
+        timeout: 看门狗超时秒数，超时强制断开
+    返回:
+        识别出的文本
+    异常:
+        RuntimeError: 讯飞返回非 0 错误码或连接失败
+    """
     """调用讯飞语音听写 WebSocket 接口，返回识别文本"""
     pcm = pcm[:16000 * 2 * 60]  # 最长 60 秒
     state = {'final_parts': [], 'r1_texts': {}, 'err': None}
@@ -311,6 +382,11 @@ def iflytek_iat(pcm: bytes, timeout=20) -> str:
 
 @app.route('/api/stt', methods=['POST'])
 def stt():
+    """录音转写接口：POST /api/stt。
+
+    请求体: 16kHz 单声道 WAV 字节流（Content-Type: audio/wav）
+    响应:   {"text": "识别结果"}；失败返回 4xx/5xx 及 error 说明
+    """
     if not (XFYUN_APP_ID and XFYUN_API_KEY and XFYUN_API_SECRET):
         return jsonify({'text': '', 'error': '服务端未配置讯飞密钥'}), 500
     wav_bytes = request.get_data()
@@ -326,12 +402,18 @@ def stt():
 
 @app.route('/api/switch_lang', methods=['POST', 'OPTIONS'])
 def switch_lang():
+    """界面语言切换状态同步接口：POST /api/switch_lang。
+
+    当前语言状态由前端维护，本接口预留用于服务端记录与扩展。
+    """
     if request.method == 'OPTIONS':
         return '', 200
     return jsonify({"status": "success"})
 
 @app.route('/')
 def index():
+    """首页：渲染前端页面 templates/index.html。"""
+    return render_template('index.html')
     return render_template('index.html')
 
 if __name__ == '__main__':
